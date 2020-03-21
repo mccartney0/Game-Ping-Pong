@@ -12,14 +12,14 @@ public class Player {
 		this.x = x;
 		this.y = y;
 		this.w = 40;
-		this.h = 10;
+		this.h = 7;
 	}
 
 	public void update() {
 		if(right) {
-			x++;
+			x=x+2;
 		}else if(left) {
-			x--;
+			x=x-2;
 		}
 		
 		if(x+w > Game.W) {

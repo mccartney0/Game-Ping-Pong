@@ -12,12 +12,12 @@ public class Enemy {
 		this.x =x;
 		this.y =y;
 		this.w = 40;
-		this.h = 10;
+		this.h = 7;
 	}
 	
 	//lógica
 	public void update() {
-//		x+= (Game.ball.x -x);
+		x+= (Game.ball.x -x - 6) * 0.07;
 	}
 	
 	//renderização
