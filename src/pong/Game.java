@@ -25,11 +25,15 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	public BufferedImage layer = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
 
 	public Player player;
+	public Enemy enemy;
+//	public static Ball ball;
 
 	public Game() {
 		this.setPreferredSize(new Dimension(W * SCALE, H * SCALE));
 		this.addKeyListener(this);
 		player = new Player(100, H-10);
+		enemy = new Enemy(100,0);
+//		ball = new Ball(100,H/2-1);
 	}
 
 	public static void main(String[] args) {
@@ -49,6 +53,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	public void update() {
 
 		player.update();
+		enemy.update();
+//		ball.update();
 	}
 
 	public void render() {
@@ -62,17 +68,20 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		g.setColor(Color.black);
 		g.fillRect(0, 0, W, H);
 		player.render(g);
-
+		enemy.render(g);
+//		ball.render(g);
+		
 		g = bs.getDrawGraphics();
 		g.drawImage(layer, 0, 0, W * SCALE, H * SCALE, null);
 
 		bs.show();
 	}
 
-	@Override
+	@Override //Game looping
 	public void run() {
 
 		while (true) {
+			requestFocus(); // Para focar automaticamente na janela e os comandos funcionarem, sem precisar clicar, basta inserir na primeira linha do Game Looping:
 			update();
 			render();
 			try {
