@@ -34,11 +34,12 @@ public class Ball {
 		
 		if(y >= Game.H) {
 			//Ponto inimigo
+			System.out.println("Ponto do inimigo ");
 			new Game();
 			return;
 		}else if(y <0) {
 			//Ponto jogador
-			System.out.println("Ponto do Jogador: " );
+			System.out.println("Ponto do Jogador ");
 			new Game();
 			return;
 		}

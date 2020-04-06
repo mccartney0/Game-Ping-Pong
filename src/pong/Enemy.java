@@ -17,7 +17,7 @@ public class Enemy {
 	
 	//lógica
 	public void update() {
-		x+= (Game.ball.x -x - 6) * 0.07;
+		x+= (Game.ball.x -x - 6) * 0.1;  // Dificuldade inimigo
 	}
 	
 	//renderização

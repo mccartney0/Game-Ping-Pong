@@ -35,10 +35,6 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		enemy = new Enemy(100,1);
 		ball = new Ball(100,H/2-1);
 	}
-	
-	public void Ball(int j) {
-		System.out.println(j);
-	}
 
 	public static void main(String[] args) {
 		Game game = new Game();
@@ -110,6 +106,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 			player.left = true;
 		}
+		
+		if(e.getKeyCode() == KeyEvent.VK_A) {
+			player.left = true;
+		} else if (e.getKeyCode() == KeyEvent.VK_D) {
+			player.right = true;
+		}
 
 	}
 
@@ -120,7 +122,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 			player.left = false;
 		}
-
+		
+		if(e.getKeyCode() == KeyEvent.VK_A) {
+			player.left = false;
+		} else if (e.getKeyCode() == KeyEvent.VK_D) {
+			player.right = false;
+		}
 	}
 
 }
