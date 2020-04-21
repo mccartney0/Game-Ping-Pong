@@ -10,7 +10,7 @@ public class Ball {
 
 	public double x,y,dx,dy;
 	public int w,h;
-	public double speed = 1.7;
+	public double speed = 3.7;
 	
 	public Ball(int x, int y) {
 		this.x =x;

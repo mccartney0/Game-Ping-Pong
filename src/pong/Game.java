@@ -24,9 +24,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	// Renderizando, parando de piscar a tela java 8 -
 	public BufferedImage layer = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
 
+	public static String gameState = "NORMAL";
+	
 	public static Player player;
 	public static Enemy enemy;
 	public static Ball ball;
+	public static Menu menu;
 
 	public Game() {
 		this.setPreferredSize(new Dimension(W * SCALE, H * SCALE));
@@ -51,10 +54,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	}
 
 	public void update() {
-
+		if (gameState == "NORMAL") {
 		player.update();
 		enemy.update();
 		ball.update();
+		}
 	}
 
 	public void render() {
