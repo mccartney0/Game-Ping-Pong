@@ -9,11 +9,12 @@ public class Player {
 
 	public boolean right, left;
 	public int x, y,w,h;
-
+	public int sizePlayer;
+	
 	public Player(int x, int y) {
 		this.x = x;
 		this.y = y;
-		this.w = 40;
+		this.w = 40 + sizePlayer;
 		this.h = 7;
 	}
 
@@ -28,6 +29,10 @@ public class Player {
 			x = Game.W - w;
 		}else if(x<0) {
 			x=0;
+		}
+		
+		if(Ball.pontoJogador == 1) {
+			sizePlayer += 5;
 		}
 	}
 

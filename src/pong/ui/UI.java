@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 
 import pong.entities.Ball;
+import pong.main.Game;
 
 
 public class UI {
@@ -22,7 +23,10 @@ public class UI {
 		public void render(Graphics g) {
 			g.setFont(new Font("arial", Font.BOLD, 20));
 			g.setColor(Color.white);
-			g.drawString("Pontos", 13, 100);
+			g.drawString("Nível:", 5, 50);
+			g.drawString(Game.nivel+"", 65, 50);
+			g.drawString(Ball.pontoJogador+"", 40, 240);
+			g.drawString("Pontos", 13, 120);
 			g.drawString("Máquina", 6, 150);
 			g.drawString(Ball.pontoInimigo+"", 40, 180);
 			g.drawString("Jogador", 6, 210);

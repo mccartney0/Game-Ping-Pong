@@ -12,7 +12,7 @@ public class Ball {
 
 	public double x,y,dx,dy;
 	public int w,h;
-	public double speed = 2.4;
+	public static double speed = 2.0;
 	public static int pontoInimigo, pontoJogador;
 	
 	public Ball(int x, int y) {
@@ -57,13 +57,13 @@ public class Ball {
 		
 		//intersects = colidir
 		if(bounds.intersects(boundsPlayer)) {
-			int angle = new Random().nextInt(120 - 45) + 45 + 1;
+			int angle = new Random().nextInt(120 - 45) + 45;
 			dx = Math.cos(Math.toRadians(angle));
 			dy = Math.sin(Math.toRadians(angle));
 			if(dy > 0)
 				dy*=-1;
 		}else if(bounds.intersects(boundsEnemy)) {
-			int angle = new Random().nextInt(120 - 45) + 45 + 1;
+			int angle = new Random().nextInt(120 - 45) + 45 ;
 			dx = Math.cos(Math.toRadians(angle));
 			dy = Math.sin(Math.toRadians(angle));
 			if(dy < 0)

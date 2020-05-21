@@ -42,6 +42,9 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	private boolean restartGame = false;
 	private int framesGameOver = 0;
 	private boolean showMessageGameOver = true;
+	
+	public static int nivel = 1;
+	public static boolean nextNivel;
 	public static Player player;
 	public static Enemy enemy;
 	public static Ball ball;
@@ -51,9 +54,9 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	public Game() {
 		this.setPreferredSize(new Dimension(W * SCALE, H * SCALE));
 		this.addKeyListener(this);
-		player = new Player(100, H - 8);
-		enemy = new Enemy(100, 1);
-		ball = new Ball(100, H / 2 - 1);
+		player = new Player(60, H - 8);
+		enemy = new Enemy(60, 1);
+		ball = new Ball(100, H / 10 - 5);
 		ui = new UI(100, 1);
 	}
 
@@ -105,7 +108,17 @@ public class Game extends Canvas implements Runnable, KeyListener {
 			}
 
 		}
-	}
+		
+		if(nextNivel) {
+			if(1 < Game.nivel) {
+				nextNivel = false;
+				Ball.speed += 0.5;
+				Enemy.difficulty += 0.05;
+			}
+		}
+		
+		
+	}//FIM UPDATE
 
 	public void render() {
 		BufferStrategy bs = this.getBufferStrategy();
@@ -148,9 +161,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
 			g2.fillRect(0, 0, W * SCALE, H * SCALE);
 			g.setFont(new Font("arial", Font.BOLD, 36));
 			g.setColor(Color.white);
-			g.drawString("You WIN!", 150, 150);
+			g.drawString("You WIN!", 160, 130);
 			g.setFont(new Font("arial", Font.BOLD, 25));
-			g.drawString("Deseja jogar novamente?",85, 234);
+			g.drawString("Para avançar de nível",100, 204);
+			g.drawString(">Pressione Enter<", 125, 234);
 		}
 		bs.show();
 	}
