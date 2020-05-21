@@ -1,4 +1,4 @@
-package pong;
+package pong.entities;
 
 
 import java.awt.Color;
@@ -6,11 +6,14 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.util.Random;
 
+import pong.main.Game;
+
 public class Ball {
 
 	public double x,y,dx,dy;
 	public int w,h;
-	public double speed = 3.7;
+	public double speed = 2.4;
+	public static int pontoInimigo, pontoJogador;
 	
 	public Ball(int x, int y) {
 		this.x =x;
@@ -18,7 +21,7 @@ public class Ball {
 		this.w = 4;
 		this.h = 4;
 		
-		int angle = new Random().nextInt(120 - 45) + 45 + 1;
+		int angle = new Random().nextInt(120 - 45) + 45 + 5;
 		dx = Math.cos(Math.toRadians(angle));
 		dy = Math.sin(Math.toRadians(angle));
 	}
@@ -34,12 +37,14 @@ public class Ball {
 		
 		if(y >= Game.H) {
 			//Ponto inimigo
-			System.out.println("Ponto do inimigo ");
+//			System.out.println("Ponto do inimigo ");
+			pontoInimigo+=1;
 			new Game();
 			return;
 		}else if(y <0) {
 			//Ponto jogador
-			System.out.println("Ponto do Jogador ");
+//			System.out.println("Ponto do Jogador ");
+			pontoJogador+=1;
 			new Game();
 			return;
 		}

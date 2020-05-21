@@ -1,5 +1,6 @@
-package pong;
+package pong.ui;
 
+import pong.main.Game;
 
 public class Menu {
 

@@ -1,7 +1,9 @@
-package pong;
+package pong.entities;
 
 import java.awt.Color;
 import java.awt.Graphics;
+
+import pong.main.Game;
 
 public class Player {
 
