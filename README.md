@@ -29,3 +29,15 @@ As estatísticas são salvas localmente em `pong-stats.properties`, que não é 
 ## Sistemas de jogo
 
 A partida conta com energia, combos, recorde, power-ups de energia, slow, split e multiplicador, obstáculos móveis, zonas turbo, gravidade zero, desafios por sequência, progressão local por XP, estatísticas, sons procedurais, partículas, trilha da bola, tremor de impacto e mensagens contextuais.
+
+## Arena Mutante
+
+No menu, escolha `EDITOR DE ARENA`. Use as setas para mover o cursor, `TAB` para trocar o elemento, `SPACE` para colocar, `X` para remover, `BACKSPACE` para limpar e `ENTER` para salvar. Os elementos disponíveis são bloco, turbo, slow, portal e gravidade. A arena salva é aplicada ao modo `ARENA MUTANTE` e pode ser compartilhada pelo código gerado no modelo `ArenaBlueprint`.
+
+## Skins e itens
+
+A opção `SKINS E ITENS` permite trocar skins de raquete, bola, arena e título. Os itens são liberados por XP e o equipamento é persistido em `pong-stats.properties`. As skins alteram cores, halos, gradientes e a identidade visual da partida.
+
+## Campanha de bosses
+
+A `CAMPANHA BOSS` apresenta quatro chefes: Volt, Mirror, Twin e Gravity. Cada chefe altera o alvo da IA ou a trajetória da bola de forma diferente. O jogador possui três vidas e precisa derrotar cada chefe por impactos sucessivos; derrotas e XP são registradas no save local.

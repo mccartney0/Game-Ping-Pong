@@ -29,26 +29,32 @@ public class UI {
 
         g2.setFont(smallFont);
         g2.setColor(new Color(150, 230, 250));
-        g2.drawString(Game.gameMode == pong.main.GameMode.SURVIVAL ? "PILOTO" : "VOCE", 30, 43);
+        g2.drawString(Game.gameMode == pong.main.GameMode.SURVIVAL || Game.gameMode == pong.main.GameMode.CAMPAIGN ? "PILOTO" : "VOCE", 30, 43);
         g2.setColor(new Color(255, 185, 150));
-        g2.drawString(Game.gameMode.isVersus() ? "JOGADOR 2" : (Game.enemy.isBoss() ? "BOSS" : "MAQUINA"), width - 105, 43);
+        g2.drawString(Game.gameMode.isVersus() ? "JOGADOR 2" : (Game.gameMode.isCampaign() ? "BOSS " + Game.getBossLabel() : (Game.enemy.isBoss() ? "BOSS" : "MAQUINA")), width - 125, 43);
 
         g2.setFont(scoreFont);
         g2.setColor(new Color(110, 240, 255));
-        g2.drawString(String.valueOf(Game.gameMode == pong.main.GameMode.SURVIVAL ? Game.survivalScore : Game.playerScore), 36, 73);
+        int leftScore = Game.gameMode == pong.main.GameMode.SURVIVAL ? Game.survivalScore
+                : Game.gameMode.isCampaign() ? Game.getCampaignLives() : Game.playerScore;
+        int rightScore = Game.gameMode.isCampaign() ? Game.getBossHealth()
+                : Game.gameMode == pong.main.GameMode.SURVIVAL ? Game.survivalLives : Game.enemyScore;
+        g2.drawString(String.valueOf(leftScore), 36, 73);
         g2.setColor(new Color(245, 250, 255));
         g2.drawString(":", width / 2 - 7, 73);
         g2.setColor(new Color(255, 150, 105));
-        g2.drawString(String.valueOf(Game.gameMode == pong.main.GameMode.SURVIVAL ? Game.survivalLives : Game.enemyScore), width - 56, 73);
+        g2.drawString(String.valueOf(rightScore), width - 56, 73);
 
         g2.setFont(tinyFont);
         g2.setColor(new Color(255, 215, 100));
-        String leftMeta = Game.gameMode == pong.main.GameMode.SURVIVAL
-                ? "VIDAS " + Game.survivalLives
+        String leftMeta = Game.gameMode == pong.main.GameMode.SURVIVAL || Game.gameMode.isCampaign()
+                ? "VIDAS " + (Game.gameMode.isCampaign() ? Game.getCampaignLives() : Game.survivalLives)
                 : "META " + Game.getTargetScore();
         g2.drawString(leftMeta, 20, 103);
         g2.setColor(new Color(180, 205, 225));
-        String centerMeta = "COMBO x" + Game.rallyCombo + "  REC " + Game.highScore;
+        String centerMeta = Game.gameMode.isCampaign()
+                ? "FASE " + (Game.campaign.getBossIndex() + 1) + "  COMBO x" + Game.rallyCombo
+                : "COMBO x" + Game.rallyCombo + "  REC " + Game.highScore;
         int centerX = (width - g2.getFontMetrics().stringWidth(centerMeta)) / 2;
         g2.drawString(centerMeta, centerX, 103);
         g2.setColor(new Color(255, 215, 100));

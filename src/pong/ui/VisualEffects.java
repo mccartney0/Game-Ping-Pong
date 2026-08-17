@@ -134,7 +134,7 @@ public class VisualEffects {
         emit(Game.W / 2.0, Game.H / 2.0, won ? new Color(100, 255, 190) : new Color(255, 90, 120), 36, 1.0);
     }
 
-    private void announce(String text, Color color, int ticks) {
+    public void announce(String text, Color color, int ticks) {
         message = text;
         messageColor = color;
         messageTicks = ticks;
@@ -166,9 +166,10 @@ public class VisualEffects {
         Graphics2D g2 = (Graphics2D) g;
         Paint oldPaint = g2.getPaint();
         Stroke oldStroke = g2.getStroke();
-        g2.setPaint(new GradientPaint(0, 0, new Color(7, 13, 35), 0, Game.H, new Color(2, 3, 12)));
+        g2.setPaint(new GradientPaint(0, 0, Game.getArenaSecondary(), 0, Game.H, new Color(2, 3, 12)));
         g2.fillRect(0, 0, Game.W, Game.H);
-        g2.setColor(new Color(65, 140, 190, 55));
+        Color arenaGrid = Game.getArenaPrimary();
+        g2.setColor(new Color(arenaGrid.getRed(), arenaGrid.getGreen(), arenaGrid.getBlue(), 55));
         g2.setStroke(new BasicStroke(1f));
         for (int x = 18; x < Game.W; x += 24) {
             g2.drawLine(x, 0, x, Game.H);
@@ -176,7 +177,7 @@ public class VisualEffects {
         for (int y = 18; y < Game.H; y += 24) {
             g2.drawLine(0, y, Game.W, y);
         }
-        g2.setColor(new Color(145, 225, 255, 130));
+        g2.setColor(new Color(arenaGrid.getRed(), arenaGrid.getGreen(), arenaGrid.getBlue(), 150));
         g2.setStroke(new BasicStroke(1.1f));
         g2.drawRect(1, 1, Game.W - 3, Game.H - 3);
         for (int y = 4; y < Game.H - 4; y += 8) {

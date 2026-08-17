@@ -20,6 +20,12 @@ public class Stats {
     public int xp;
     public int unlockedArena = 1;
     public int completedChallenges;
+    public int bossesDefeated;
+    public String equippedPaddle = "paddle-neon";
+    public String equippedBall = "ball-core";
+    public String equippedArena = "arena-grid";
+    public String equippedTitle = "title-rookie";
+    public String customArenaCode = "";
 
     public void load() {
         if (!Files.exists(savePath)) {
@@ -37,6 +43,12 @@ public class Stats {
             xp = read(properties, "xp", xp);
             unlockedArena = Math.max(1, read(properties, "unlockedArena", unlockedArena));
             completedChallenges = read(properties, "completedChallenges", completedChallenges);
+            bossesDefeated = read(properties, "bossesDefeated", bossesDefeated);
+            equippedPaddle = properties.getProperty("equippedPaddle", equippedPaddle);
+            equippedBall = properties.getProperty("equippedBall", equippedBall);
+            equippedArena = properties.getProperty("equippedArena", equippedArena);
+            equippedTitle = properties.getProperty("equippedTitle", equippedTitle);
+            customArenaCode = properties.getProperty("customArenaCode", customArenaCode);
         } catch (Exception ignored) {
             // Um arquivo de save inválido não pode impedir uma nova partida.
         }
@@ -55,6 +67,52 @@ public class Stats {
         bestCombo = Math.max(bestCombo, combo);
         totalPoints += points;
         unlockedArena = Math.min(5, 1 + xp / 100);
+        save();
+    }
+
+    public void recordBossDefeat() {
+        bossesDefeated++;
+        xp += 60;
+        unlockedArena = Math.min(5, 1 + xp / 100);
+        save();
+    }
+
+    public String getEquippedItemId(CosmeticItem.Slot slot) {
+        switch (slot) {
+        case PADDLE:
+            return equippedPaddle;
+        case BALL:
+            return equippedBall;
+        case ARENA:
+            return equippedArena;
+        case TITLE:
+            return equippedTitle;
+        default:
+            return "";
+        }
+    }
+
+    public void setEquippedItemId(CosmeticItem.Slot slot, String id) {
+        switch (slot) {
+        case PADDLE:
+            equippedPaddle = id;
+            break;
+        case BALL:
+            equippedBall = id;
+            break;
+        case ARENA:
+            equippedArena = id;
+            break;
+        case TITLE:
+            equippedTitle = id;
+            break;
+        default:
+            break;
+        }
+    }
+
+    public void setCustomArenaCode(String code) {
+        customArenaCode = code == null ? "" : code;
         save();
     }
 
@@ -80,6 +138,12 @@ public class Stats {
         properties.setProperty("xp", String.valueOf(xp));
         properties.setProperty("unlockedArena", String.valueOf(unlockedArena));
         properties.setProperty("completedChallenges", String.valueOf(completedChallenges));
+        properties.setProperty("bossesDefeated", String.valueOf(bossesDefeated));
+        properties.setProperty("equippedPaddle", equippedPaddle);
+        properties.setProperty("equippedBall", equippedBall);
+        properties.setProperty("equippedArena", equippedArena);
+        properties.setProperty("equippedTitle", equippedTitle);
+        properties.setProperty("customArenaCode", customArenaCode);
         try (OutputStream output = Files.newOutputStream(savePath)) {
             properties.store(output, "Neon Ping Pong statistics");
         } catch (Exception ignored) {

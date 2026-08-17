@@ -8,6 +8,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
@@ -40,6 +42,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static final String STATE_GAME_OVER = "GAMEOVER";
     public static final String STATE_WIN = "WIN";
     public static final String STATE_STATS = "STATS";
+    public static final String STATE_EDITOR = "EDITOR";
+    public static final String STATE_COSMETICS = "COSMETICS";
 
     public final BufferedImage layer = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
 
@@ -76,6 +80,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public static PowerUp powerUp;
     public static Stats stats;
     public static SoundManager sound;
+    public static ArenaEditor editor;
+    public static Inventory inventory;
+    public static BossCampaign campaign;
+    public static ArenaBlueprint activeBlueprint;
 
     private volatile boolean isRunning;
     private Thread thread;
@@ -83,6 +91,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
     private static boolean showStateMessage = true;
     private static int challengeProgress;
     private static int challengeTarget = 12;
+    private static int cosmeticSlotSelection;
 
     public Game() {
         setPreferredSize(new Dimension(W * SCALE, H * SCALE));
@@ -96,7 +105,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
         sound.setVolumePercent(volumePercent);
         stats = new Stats();
         stats.load();
+        inventory = new Inventory(stats);
+        editor = new ArenaEditor();
+        campaign = new BossCampaign();
         highScore = stats.bestScore;
+        loadSavedArena();
         restartToMenu();
     }
 
@@ -138,6 +151,116 @@ public class Game extends Canvas implements Runnable, KeyListener {
         resetRoundEntities(true);
     }
 
+    private static void loadSavedArena() {
+        activeBlueprint = ArenaBlueprint.fromShareCode(stats == null ? "" : stats.customArenaCode);
+        if (activeBlueprint == null || !activeBlueprint.isValid()) {
+            activeBlueprint = new ArenaBlueprint();
+            activeBlueprint.setName("Arena Inicial");
+        }
+        if (editor != null) {
+            editor.load(activeBlueprint);
+        }
+    }
+
+    public static void openEditor() {
+        gameState = STATE_EDITOR;
+        if (editor == null) {
+            editor = new ArenaEditor();
+        }
+    }
+
+    public static void copyArenaCode() {
+        if (editor != null && editor.isValid()) {
+            try {
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(editor.getShareCode()), null);
+                if (effects != null) {
+                    effects.announce("CODIGO COPIADO", new Color(110, 255, 180), 55);
+                }
+            } catch (Exception exception) {
+                if (effects != null) {
+                    effects.announce("CODIGO: " + editor.getShareCode(), new Color(255, 220, 100), 55);
+                }
+            }
+        }
+    }
+
+    public static void saveEditorArena() {
+        if (editor != null && editor.isValid()) {
+            activeBlueprint = editor.getBlueprint();
+            if (stats != null) {
+                stats.setCustomArenaCode(activeBlueprint.toShareCode());
+                stats.xp += 15;
+                stats.save();
+            }
+            if (effects != null) {
+                effects.announce("ARENA SALVA", new Color(110, 255, 180), 55);
+            }
+            gameState = STATE_MENU;
+        }
+    }
+
+    public static CosmeticItem.Slot getCosmeticSlot() {
+        CosmeticItem.Slot[] slots = CosmeticItem.Slot.values();
+        return slots[Math.max(0, Math.min(slots.length - 1, cosmeticSlotSelection))];
+    }
+
+    public static void cycleCosmeticSlot(int direction) {
+        int length = CosmeticItem.Slot.values().length;
+        cosmeticSlotSelection = (cosmeticSlotSelection + direction + length) % length;
+    }
+
+    public static void cycleCosmeticItem(int direction) {
+        if (inventory != null) {
+            inventory.cycle(getCosmeticSlot(), direction);
+        }
+    }
+
+    public static void equipCosmetic() {
+        if (inventory != null) {
+            cycleCosmeticItem(1);
+        }
+    }
+
+    public static String getCosmeticLabel(CosmeticItem.Slot slot) {
+        return inventory == null ? "-" : inventory.equipped(slot).getName();
+    }
+
+    public static Color getPaddlePrimary() {
+        return inventory == null ? new Color(70, 220, 255) : inventory.equipped(CosmeticItem.Slot.PADDLE).getPrimary();
+    }
+
+    public static Color getPaddleSecondary() {
+        return inventory == null ? new Color(35, 120, 220) : inventory.equipped(CosmeticItem.Slot.PADDLE).getSecondary();
+    }
+
+    public static Color getBallPrimary() {
+        return inventory == null ? Color.white : inventory.equipped(CosmeticItem.Slot.BALL).getPrimary();
+    }
+
+    public static Color getBallSecondary() {
+        return inventory == null ? new Color(100, 220, 255) : inventory.equipped(CosmeticItem.Slot.BALL).getSecondary();
+    }
+
+    public static Color getArenaPrimary() {
+        return inventory == null ? new Color(65, 140, 190) : inventory.equipped(CosmeticItem.Slot.ARENA).getPrimary();
+    }
+
+    public static Color getArenaSecondary() {
+        return inventory == null ? new Color(7, 13, 35) : inventory.equipped(CosmeticItem.Slot.ARENA).getSecondary();
+    }
+
+    public static String getBossLabel() {
+        return campaign == null ? "-" : campaign.getBossType().getLabel();
+    }
+
+    public static int getBossHealth() {
+        return campaign == null ? 0 : campaign.getBossHealth();
+    }
+
+    public static int getCampaignLives() {
+        return campaign == null ? 0 : campaign.getPlayerLives();
+    }
+
     public static void startMatch(GameMode mode) {
         gameMode = mode;
         resetMatchValues();
@@ -145,6 +268,13 @@ public class Game extends Canvas implements Runnable, KeyListener {
         stateAnimationTicks = 0;
         showStateMessage = true;
         challengeTarget = mode == GameMode.SURVIVAL ? 25 : 12;
+        if (mode == GameMode.CAMPAIGN && campaign != null) {
+            campaign.start();
+        }
+        if (mode == GameMode.MUTANT && activeBlueprint == null) {
+            activeBlueprint = new ArenaBlueprint("Arena Mutante");
+        }
+        arena.setCustomBlueprint(mode == GameMode.MUTANT ? activeBlueprint : null);
         arena.reset();
         resetRoundEntities(true);
         if (sound != null) {
@@ -236,10 +366,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
     }
 
     private static void resetRoundEntities(boolean clearEffects) {
-        player = new Player((W - 34) / 2.0, H - 14, new Color(70, 220, 255), false);
+        player = new Player((W - 34) / 2.0, H - 14, getPaddlePrimary(), false);
         playerTwo = new Player((W - 34) / 2.0, 28, new Color(255, 185, 90), true);
         enemy = new Enemy((W - 34) / 2.0, 28);
-        enemy.setBoss(gameMode == GameMode.SURVIVAL && survivalScore >= 3);
+        enemy.setBoss((gameMode == GameMode.SURVIVAL && survivalScore >= 3) || gameMode == GameMode.CAMPAIGN);
         ball = new Ball(W / 2.0 - 2, H / 2.0 - 2);
         if (clearEffects && effects != null) {
             effects.reset();
@@ -287,6 +417,9 @@ public class Game extends Canvas implements Runnable, KeyListener {
             }
             if (arena != null) {
                 arena.update(delta, gameMode);
+            }
+            if (gameMode == GameMode.CAMPAIGN && campaign != null) {
+                campaign.update(delta);
             }
             ball.update(delta);
             updatePowerUp(delta);
@@ -402,7 +535,28 @@ public class Game extends Canvas implements Runnable, KeyListener {
         rallyCombo = playerScored ? rallyCombo + 1 : 0;
         maxCombo = Math.max(maxCombo, rallyCombo);
 
-        if (gameMode == GameMode.SURVIVAL) {
+        if (gameMode == GameMode.CAMPAIGN) {
+            if (playerScored) {
+                totalPoints += 150 + rallyCombo * 30;
+                boolean finalBossDefeated = campaign.hitBoss();
+                if (campaign.wasBossDefeated()) {
+                    if (stats != null) {
+                        stats.recordBossDefeat();
+                    }
+                }
+                if (finalBossDefeated) {
+                    endMatch(true);
+                    return;
+                }
+            } else if (campaign.loseLife()) {
+                endMatch(false);
+                return;
+            }
+            if (effects != null) {
+                effects.announce(campaign.getMessage(), campaign.getBossColor(), 45);
+            }
+            resetRoundEntities(false);
+        } else if (gameMode == GameMode.SURVIVAL) {
             if (playerScored) {
                 survivalScore += playerPointMultiplier;
                 playerPointMultiplier = 1;
@@ -460,7 +614,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
         gameState = won ? STATE_WIN : STATE_GAME_OVER;
         stateAnimationTicks = 0;
         showStateMessage = true;
-        int score = gameMode == GameMode.SURVIVAL ? survivalScore : playerScore;
+        int score = gameMode == GameMode.SURVIVAL ? survivalScore : gameMode == GameMode.CAMPAIGN ? campaign.getBossIndex() : playerScore;
         if (stats != null) {
             stats.recordMatch(won, score, maxCombo, totalPoints);
             highScore = Math.max(highScore, stats.bestScore);
@@ -573,25 +727,31 @@ public class Game extends Canvas implements Runnable, KeyListener {
         }
 
         Graphics2D layerGraphics = layer.createGraphics();
-        if (effects != null) {
-            effects.renderBackground(layerGraphics);
-            effects.renderTrail(layerGraphics);
-        }
-        if (arena != null) {
-            arena.render(layerGraphics);
-        }
-        if (powerUp != null) {
-            powerUp.render(layerGraphics);
-        }
-        player.render(layerGraphics);
-        if (gameMode.isVersus()) {
-            playerTwo.render(layerGraphics);
+        if (STATE_EDITOR.equals(gameState)) {
+            if (editor != null) {
+                editor.render(layerGraphics);
+            }
         } else {
-            enemy.render(layerGraphics);
-        }
-        ball.render(layerGraphics);
-        if (effects != null) {
-            effects.renderForeground(layerGraphics);
+            if (effects != null) {
+                effects.renderBackground(layerGraphics);
+                effects.renderTrail(layerGraphics);
+            }
+            if (arena != null) {
+                arena.render(layerGraphics);
+            }
+            if (powerUp != null) {
+                powerUp.render(layerGraphics);
+            }
+            player.render(layerGraphics);
+            if (gameMode.isVersus()) {
+                playerTwo.render(layerGraphics);
+            } else {
+                enemy.render(layerGraphics);
+            }
+            ball.render(layerGraphics);
+            if (effects != null) {
+                effects.renderForeground(layerGraphics);
+            }
         }
         layerGraphics.dispose();
 
@@ -618,6 +778,20 @@ public class Game extends Canvas implements Runnable, KeyListener {
             return;
         }
         Graphics2D g2 = (Graphics2D) g;
+        if (STATE_EDITOR.equals(gameState)) {
+            g2.setColor(new Color(2, 5, 18, 115));
+            g2.fillRect(0, 0, W * SCALE, 30);
+            g2.fillRect(0, Game.H * SCALE - 42, W * SCALE, 42);
+            drawCentered(g2, "ENTER salva  |  BACKSPACE limpa  |  ESC menu  |  TAB troca elemento", 116,
+                    new Font("Dialog", Font.BOLD, 12), new Color(255, 220, 100));
+            return;
+        }
+        if (STATE_COSMETICS.equals(gameState)) {
+            g2.setColor(new Color(3, 6, 20, 238));
+            g2.fillRect(0, 0, W * SCALE, H * SCALE);
+            renderCosmeticsOverlay(g2);
+            return;
+        }
         g2.setColor(new Color(3, 6, 20, 228));
         g2.fillRect(0, 0, W * SCALE, H * SCALE);
 
@@ -625,14 +799,14 @@ public class Game extends Canvas implements Runnable, KeyListener {
             drawCentered(g2, "NEON PING PONG", 25, new Font("Dialog", Font.BOLD, 31), new Color(120, 240, 255));
             drawCentered(g2, "DUEL OF ENERGY", 39, new Font("Dialog", Font.PLAIN, 13), Color.white);
             String[] menuItems = { "JOGAR CLASSICO", "SOBREVIVENCIA", "MODO TURBO", "VERSUS LOCAL",
-                    "DIFICULDADE: " + getDifficultyLabel(), "VOLUME: " + getVolumeLabel(),
-                    "SOM: " + (soundEnabled ? "ON" : "OFF"), "ESTATISTICAS", "SAIR" };
+                    "ARENA MUTANTE", "CAMPANHA BOSS", "SKINS E ITENS", "EDITOR DE ARENA", "ESTATISTICAS", "SAIR" };
             for (int i = 0; i < menuItems.length; i++) {
                 Color color = i == menuSelection ? new Color(255, 215, 90) : new Color(180, 210, 230);
-                drawCentered(g2, (i == menuSelection ? "> " : "  ") + menuItems[i], 44 + i * 8,
-                        new Font("Dialog", Font.BOLD, i == menuSelection ? 12 : 11), color);
+                drawCentered(g2, (i == menuSelection ? "> " : "  ") + menuItems[i], 43 + i * 6,
+                        new Font("Dialog", Font.BOLD, i == menuSelection ? 10 : 9), color);
             }
-            drawCentered(g2, "SETAS + ENTER | LEFT/RIGHT ajusta opcoes", 116, new Font("Dialog", Font.PLAIN, 10), new Color(170, 200, 220));
+            drawCentered(g2, "SETAS + ENTER | F2 dificuldade | F3 som | F4 volume | F11 tela cheia", 116,
+                    new Font("Dialog", Font.PLAIN, 9), new Color(170, 200, 220));
         } else if (STATE_PAUSED.equals(gameState)) {
             drawCentered(g2, "PAUSADO", 45, new Font("Dialog", Font.BOLD, 30), Color.white);
             drawCentered(g2, "ESC ou ENTER para continuar", 68, new Font("Dialog", Font.BOLD, 15), new Color(255, 215, 90));
@@ -660,6 +834,29 @@ public class Game extends Canvas implements Runnable, KeyListener {
                 drawCentered(g2, "ENTER joga novamente  |  ESC volta ao menu", 108,
                         new Font("Dialog", Font.BOLD, 13), new Color(255, 215, 90));
             }
+        }
+    }
+
+    private void renderCosmeticsOverlay(Graphics2D g2) {
+        CosmeticItem.Slot slot = getCosmeticSlot();
+        drawCentered(g2, "SKINS E ITENS", 22, new Font("Dialog", Font.BOLD, 27), new Color(120, 240, 255));
+        drawCentered(g2, "TAB muda categoria  |  SETAS trocam  |  ENTER equipa  |  ESC volta", 35,
+                new Font("Dialog", Font.PLAIN, 11), new Color(180, 220, 240));
+        drawCentered(g2, "CATEGORIA: " + slot.name(), 51, new Font("Dialog", Font.BOLD, 15), new Color(255, 215, 90));
+        CosmeticItem[] items = CosmeticCatalog.forSlot(slot);
+        for (int i = 0; i < items.length; i++) {
+            CosmeticItem item = items[i];
+            boolean equipped = inventory != null && inventory.equipped(slot).getId().equals(item.getId());
+            boolean unlocked = inventory != null && inventory.isUnlocked(item);
+            Color color = unlocked ? item.getPrimary() : new Color(110, 125, 145);
+            String marker = equipped ? "> " : "  ";
+            String status = unlocked ? (equipped ? "EQUIPADO" : "OK") : "XP " + item.getUnlockXp();
+            drawCentered(g2, marker + item.getName() + "  [" + status + "]", 67 + i * 13,
+                    new Font("Dialog", Font.BOLD, equipped ? 14 : 12), color);
+        }
+        CosmeticItem equipped = inventory == null ? null : inventory.equipped(slot);
+        if (equipped != null) {
+            drawCentered(g2, equipped.getDescription(), 109, new Font("Dialog", Font.PLAIN, 11), new Color(190, 220, 235));
         }
     }
 
@@ -701,20 +898,18 @@ public class Game extends Canvas implements Runnable, KeyListener {
         if (STATE_MENU.equals(gameState)) {
             if (keyCode == KeyEvent.VK_F11) {
                 toggleFullscreen();
+            } else if (keyCode == KeyEvent.VK_F2) {
+                cycleDifficulty();
+            } else if (keyCode == KeyEvent.VK_F3) {
+                toggleSound();
+            } else if (keyCode == KeyEvent.VK_F4) {
+                cycleVolume();
             } else if (keyCode == KeyEvent.VK_UP) {
-                menuSelection = (menuSelection + 8) % 9;
+                menuSelection = (menuSelection + 9) % 10;
                 sound.menu();
             } else if (keyCode == KeyEvent.VK_DOWN) {
-                menuSelection = (menuSelection + 1) % 9;
+                menuSelection = (menuSelection + 1) % 10;
                 sound.menu();
-            } else if (keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_RIGHT) {
-                if (menuSelection == 4) {
-                    cycleDifficulty();
-                } else if (menuSelection == 5) {
-                    cycleVolume();
-                } else if (menuSelection == 6) {
-                    toggleSound();
-                }
             } else if (keyCode == KeyEvent.VK_ENTER) {
                 selectMenuItem();
             }
@@ -724,6 +919,46 @@ public class Game extends Canvas implements Runnable, KeyListener {
         if (STATE_STATS.equals(gameState)) {
             if (keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_ESCAPE) {
                 gameState = STATE_MENU;
+            }
+            return;
+        }
+
+        if (STATE_COSMETICS.equals(gameState)) {
+            if (keyCode == KeyEvent.VK_ESCAPE) {
+                gameState = STATE_MENU;
+            } else if (keyCode == KeyEvent.VK_TAB) {
+                cycleCosmeticSlot(1);
+            } else if (keyCode == KeyEvent.VK_LEFT) {
+                cycleCosmeticItem(-1);
+            } else if (keyCode == KeyEvent.VK_RIGHT || keyCode == KeyEvent.VK_ENTER) {
+                cycleCosmeticItem(1);
+            }
+            return;
+        }
+
+        if (STATE_EDITOR.equals(gameState)) {
+            if (keyCode == KeyEvent.VK_ESCAPE) {
+                gameState = STATE_MENU;
+            } else if (keyCode == KeyEvent.VK_UP) {
+                editor.moveCursor(0, -4);
+            } else if (keyCode == KeyEvent.VK_DOWN) {
+                editor.moveCursor(0, 4);
+            } else if (keyCode == KeyEvent.VK_LEFT) {
+                editor.moveCursor(-4, 0);
+            } else if (keyCode == KeyEvent.VK_RIGHT) {
+                editor.moveCursor(4, 0);
+            } else if (keyCode == KeyEvent.VK_TAB) {
+                editor.cycleType(1);
+            } else if (keyCode == KeyEvent.VK_SPACE) {
+                editor.place();
+            } else if (keyCode == KeyEvent.VK_X || keyCode == KeyEvent.VK_DELETE) {
+                editor.remove();
+            } else if (keyCode == KeyEvent.VK_BACK_SPACE) {
+                editor.clear();
+            } else if (keyCode == KeyEvent.VK_C) {
+                copyArenaCode();
+            } else if (keyCode == KeyEvent.VK_ENTER) {
+                saveEditorArena();
             }
             return;
         }
@@ -799,18 +1034,21 @@ public class Game extends Canvas implements Runnable, KeyListener {
             startMatch(GameMode.VERSUS);
             break;
         case 4:
-            cycleDifficulty();
+            startMatch(GameMode.MUTANT);
             break;
         case 5:
-            cycleVolume();
+            startMatch(GameMode.CAMPAIGN);
             break;
         case 6:
-            toggleSound();
+            gameState = STATE_COSMETICS;
             break;
         case 7:
-            gameState = STATE_STATS;
+            openEditor();
             break;
         case 8:
+            gameState = STATE_STATS;
+            break;
+        case 9:
             stop();
             System.exit(0);
             break;

@@ -63,9 +63,12 @@ public class Ball {
             splitTicks--;
         }
 
+        if (Game.arena != null) {
+            Game.arena.applyForces(this);
+        }
         double currentSpeed = speed * (slowTicks > 0 ? 0.62 : 1.0);
-        if (Game.arena != null && Game.arena.isTurboZone(x, y)) {
-            currentSpeed *= 1.24;
+        if (Game.arena != null) {
+            currentSpeed *= Game.arena.speedMultiplier(x, y);
         }
         double stepX = dx * currentSpeed * frameScale;
         double stepY = dy * currentSpeed * frameScale;
@@ -142,10 +145,11 @@ public class Ball {
             g2.setComposite(AlphaComposite.SrcOver);
         }
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.22f));
-        g2.setColor(slowTicks > 0 ? new Color(120, 190, 255) : new Color(100, 230, 255));
+        Color ballGlow = slowTicks > 0 ? new Color(120, 190, 255) : Game.getBallSecondary();
+        g2.setColor(ballGlow);
         g2.fillOval((int) x - 3, (int) y - 3, w + 6, h + 6);
         g2.setComposite(AlphaComposite.SrcOver);
-        g2.setColor(Color.white);
+        g2.setColor(Game.getBallPrimary());
         g2.fillRoundRect((int) Math.round(x), (int) Math.round(y), w, h, 2, 2);
     }
 }

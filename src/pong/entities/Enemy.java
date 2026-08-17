@@ -55,6 +55,9 @@ public class Enemy {
             targetX = Game.W / 2.0 - w / 2.0;
         }
 
+        if (boss && Game.gameMode.isCampaign() && Game.campaign != null) {
+            targetX = Game.campaign.adjustTarget(targetX, Game.ball.x, Game.ball.dx);
+        }
         double distance = targetX - x;
         double steering = Math.max(-1.0, Math.min(1.0, distance * difficulty * (boss ? 1.25 : 1.0)));
         double maxSpeed = Math.min(boss ? 3.5 : 3.0, (boss ? 1.8 : 1.45) + (Game.nivel - 1) * 0.14);
@@ -73,7 +76,9 @@ public class Enemy {
 
     public void render(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
-        Color baseColor = boss ? new Color(255, 170, 70) : new Color(255, 80, 110);
+        Color baseColor = boss && Game.gameMode.isCampaign() && Game.campaign != null
+                ? Game.campaign.getBossColor()
+                : boss ? new Color(255, 170, 70) : new Color(255, 80, 110);
         float pulseAlpha = boss ? 0.24f + (float) (Math.sin(bossPulse * 0.12) * 0.08) : 0.2f;
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulseAlpha));
         g2.setColor(baseColor);
@@ -86,6 +91,9 @@ public class Enemy {
         if (boss) {
             g2.setColor(new Color(255, 220, 110, 180));
             g2.drawRoundRect((int) x - 4, (int) y - 4, w + 7, h + 7, 8, 8);
+            g2.setFont(new java.awt.Font("Dialog", java.awt.Font.BOLD, 7));
+            g2.setColor(Color.white);
+            g2.drawString(Game.gameMode.isCampaign() ? Game.getBossLabel() : "BOSS", (int) x, (int) y - 7);
         }
     }
 }
