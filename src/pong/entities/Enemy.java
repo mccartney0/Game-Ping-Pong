@@ -1,5 +1,6 @@
 package pong.entities;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
@@ -13,12 +14,14 @@ public class Enemy {
     public boolean left;
     public double x;
     public final double y;
-    public final int w;
+    public int w;
     public final int h;
     public static double difficulty = 0.055;
 
     private static final double INITIAL_DIFFICULTY = 0.055;
     private double velocityX;
+    private boolean boss;
+    private int bossPulse;
 
     public Enemy(double x, double y) {
         this.x = x;
@@ -31,20 +34,30 @@ public class Enemy {
         difficulty = INITIAL_DIFFICULTY;
     }
 
+    public void setBoss(boolean boss) {
+        this.boss = boss;
+        this.w = boss ? 48 : 34;
+    }
+
+    public boolean isBoss() {
+        return boss;
+    }
+
     public void update(double deltaSeconds) {
         double frameScale = Math.min(2.5, Math.max(0.35, deltaSeconds * 60.0));
+        bossPulse++;
         double targetX;
 
         if (Game.ball != null && Game.ball.dy < 0) {
-            double prediction = Game.ball.x + Game.ball.dx * Ball.speed * 6.0;
+            double prediction = Game.ball.x + Game.ball.dx * Ball.speed * (boss ? 8.0 : 6.0);
             targetX = prediction + Game.ball.w / 2.0 - w / 2.0;
         } else {
             targetX = Game.W / 2.0 - w / 2.0;
         }
 
         double distance = targetX - x;
-        double steering = Math.max(-1.0, Math.min(1.0, distance * difficulty));
-        double maxSpeed = Math.min(3.0, 1.45 + (Game.nivel - 1) * 0.14);
+        double steering = Math.max(-1.0, Math.min(1.0, distance * difficulty * (boss ? 1.25 : 1.0)));
+        double maxSpeed = Math.min(boss ? 3.5 : 3.0, (boss ? 1.8 : 1.45) + (Game.nivel - 1) * 0.14);
         double targetVelocity = steering * maxSpeed;
         velocityX += (targetVelocity - velocityX) * Math.min(1.0, 0.22 * frameScale);
         x += velocityX * frameScale;
@@ -60,12 +73,19 @@ public class Enemy {
 
     public void render(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
-        g2.setColor(new Color(255, 80, 110, 50));
-        g2.fillRoundRect((int) x - 2, (int) y - 2, w + 4, h + 4, 5, 5);
-        g2.setPaint(new GradientPaint(0, (int) y, new Color(255, 200, 210), 0, (int) y + h,
-                new Color(210, 45, 90)));
+        Color baseColor = boss ? new Color(255, 170, 70) : new Color(255, 80, 110);
+        float pulseAlpha = boss ? 0.24f + (float) (Math.sin(bossPulse * 0.12) * 0.08) : 0.2f;
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulseAlpha));
+        g2.setColor(baseColor);
+        g2.fillRoundRect((int) x - 3, (int) y - 3, w + 6, h + 6, 6, 6);
+        g2.setComposite(AlphaComposite.SrcOver);
+        g2.setPaint(new GradientPaint(0, (int) y, baseColor.brighter(), 0, (int) y + h, baseColor.darker()));
         g2.fillRoundRect((int) x, (int) y, w, h, 4, 4);
-        g2.setColor(new Color(255, 240, 245));
+        g2.setColor(new Color(255, 245, 245));
         g2.drawRoundRect((int) x, (int) y, w - 1, h - 1, 4, 4);
+        if (boss) {
+            g2.setColor(new Color(255, 220, 110, 180));
+            g2.drawRoundRect((int) x - 4, (int) y - 4, w + 7, h + 7, 8, 8);
+        }
     }
 }

@@ -27,3 +27,22 @@ O projeto é um jogo Java/AWT de Pong, sem `package.json` ou sistema de build Ma
 5. A bola deve variar o ricochete de acordo com o local de contato e ganhar velocidade gradualmente.
 6. O jogo deve mostrar efeitos visuais perceptíveis em colisões e marcação de pontos, sem dependências externas.
 7. O código deve compilar com o nível Java 13 configurado no projeto.
+
+## Expansão implementada
+
+A versão expandida agora inclui menu inicial, seleção de modo, pausa, dificuldade, volume, som procedural, tela cheia, estatísticas locais, progressão por XP, quatro modos de jogo, habilidades com energia, combos, power-ups, arena dinâmica, desafios por sequência, chefe no modo sobrevivência, feedback de câmera e versus local.
+
+### Controles
+
+| Ação | Jogador 1 | Jogador 2 no versus |
+|---|---|---|
+| Mover | `A/D` ou setas | `J/L` |
+| Ativar habilidade | `SPACE` | `I` |
+| Trocar habilidade | `Q` | `O` |
+| Pausar/continuar | `ESC` ou `P` | `ESC` ou `P` |
+| Voltar ao menu | `M` | `M` |
+| Tela cheia | `F11` | `F11` |
+
+### Modos
+
+O modo **Clássico** usa pontuação máxima; **Sobrevivência** usa três vidas, eventos de arena e chefe; **Turbo** reduz a duração da partida e acelera a bola; **Versus Local** coloca dois jogadores na mesma janela.

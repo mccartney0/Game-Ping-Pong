@@ -19,34 +19,36 @@ import java.util.Random;
 import pong.main.Game;
 
 /**
- * Efeitos visuais procedurais para reforçar colisões e pontuação sem assets externos.
+ * Efeitos visuais procedurais para reforcar colisões e eventos sem assets externos.
  */
 public class VisualEffects {
 
-    private static final int MAX_TRAIL_POINTS = 12;
+    private static final int MAX_TRAIL_POINTS = 14;
     private final Deque<TrailPoint> trail = new ArrayDeque<TrailPoint>();
     private final List<Particle> particles = new ArrayList<Particle>();
     private final Random random = new Random();
 
     private int flashTicks;
+    private int shakeTicks;
     private Color flashColor = Color.white;
-    private String pointMessage = "";
-    private Color pointMessageColor = Color.white;
-    private int pointMessageTicks;
+    private String message = "";
+    private Color messageColor = Color.white;
+    private int messageTicks;
 
     public void update(double ballX, double ballY) {
         trail.addFirst(new TrailPoint(ballX, ballY));
         while (trail.size() > MAX_TRAIL_POINTS) {
             trail.removeLast();
         }
-
         if (flashTicks > 0) {
             flashTicks--;
         }
-        if (pointMessageTicks > 0) {
-            pointMessageTicks--;
+        if (shakeTicks > 0) {
+            shakeTicks--;
         }
-
+        if (messageTicks > 0) {
+            messageTicks--;
+        }
         Iterator<Particle> iterator = particles.iterator();
         while (iterator.hasNext()) {
             Particle particle = iterator.next();
@@ -61,31 +63,95 @@ public class VisualEffects {
         trail.clear();
         particles.clear();
         flashTicks = 0;
-        pointMessageTicks = 0;
-        pointMessage = "";
+        shakeTicks = 0;
+        messageTicks = 0;
+        message = "";
     }
 
     public void paddleHit(double x, double y, Color color) {
         triggerFlash(color);
-        emit(x, y, color, 8, 0.55);
+        emit(x, y, color, 10, 0.6);
     }
 
     public void wallHit(double x, double y) {
         emit(x, y, new Color(120, 220, 255), 5, 0.35);
     }
 
+    public void arenaHit(double x, double y) {
+        triggerFlash(new Color(255, 90, 210));
+        emit(x, y, new Color(255, 100, 220), 16, 0.75);
+        announce("ARENA!", new Color(255, 180, 240), 32);
+    }
+
     public void pointScored(boolean playerScored, double x, double y) {
         Color color = playerScored ? new Color(70, 220, 255) : new Color(255, 100, 120);
         triggerFlash(color);
-        emit(x, y, color, 24, 1.15);
-        pointMessage = playerScored ? "PONTO PARA VOCE" : "PONTO DA MAQUINA";
-        pointMessageColor = color;
-        pointMessageTicks = 60;
+        emit(x, y, color, 26, 1.15);
+        announce(playerScored ? "PONTO PARA VOCE" : "PONTO DO OPONENTE", color, 60);
+    }
+
+    public void combo(int value) {
+        announce("COMBO x" + value, new Color(255, 220, 90), 34);
+        emit(Game.W / 2.0, Game.H / 2.0, new Color(255, 215, 80), 8, 0.75);
+    }
+
+    public void abilityActivated(double x, double y, String label) {
+        triggerFlash(new Color(255, 220, 90));
+        emit(x, y, new Color(255, 220, 90), 22, 0.9);
+        announce(label + " ATIVADO", new Color(255, 230, 120), 55);
+    }
+
+    public void abilityDenied(double x, double y) {
+        announce("ENERGIA INSUFICIENTE", new Color(255, 120, 140), 45);
+        emit(x, y, new Color(255, 100, 120), 5, 0.3);
+    }
+
+    public void powerUpSpawned(double x, double y, Color color) {
+        emit(x, y, color, 12, 0.4);
+        announce("POWER-UP", color, 28);
+    }
+
+    public void powerUpCollected(double x, double y, Color color, String label) {
+        triggerFlash(color);
+        emit(x, y, color, 20, 0.9);
+        announce(label + " COLETADO", color, 52);
+    }
+
+    public void shieldBreak(double x, double y) {
+        triggerFlash(new Color(255, 220, 90));
+        emit(x, y, new Color(255, 220, 90), 28, 0.95);
+        announce("ESCUDO SALVOU O PONTO", new Color(255, 230, 120), 55);
+    }
+
+    public void challengeComplete(int nextTarget) {
+        triggerFlash(new Color(110, 255, 175));
+        emit(Game.W / 2.0, Game.H / 2.0, new Color(110, 255, 175), 32, 1.1);
+        announce("DESAFIO COMPLETO", new Color(120, 255, 180), 65);
+    }
+
+    public void matchEnded(boolean won) {
+        triggerFlash(won ? new Color(100, 255, 190) : new Color(255, 90, 120));
+        emit(Game.W / 2.0, Game.H / 2.0, won ? new Color(100, 255, 190) : new Color(255, 90, 120), 36, 1.0);
+    }
+
+    private void announce(String text, Color color, int ticks) {
+        message = text;
+        messageColor = color;
+        messageTicks = ticks;
     }
 
     private void triggerFlash(Color color) {
         flashColor = color;
         flashTicks = 5;
+        shakeTicks = Math.max(shakeTicks, 4);
+    }
+
+    public int getShakeX() {
+        return shakeTicks > 0 ? random.nextInt(3) - 1 : 0;
+    }
+
+    public int getShakeY() {
+        return shakeTicks > 0 ? random.nextInt(3) - 1 : 0;
     }
 
     private void emit(double x, double y, Color color, int amount, double velocity) {
@@ -100,10 +166,8 @@ public class VisualEffects {
         Graphics2D g2 = (Graphics2D) g;
         Paint oldPaint = g2.getPaint();
         Stroke oldStroke = g2.getStroke();
-
         g2.setPaint(new GradientPaint(0, 0, new Color(7, 13, 35), 0, Game.H, new Color(2, 3, 12)));
         g2.fillRect(0, 0, Game.W, Game.H);
-
         g2.setColor(new Color(65, 140, 190, 55));
         g2.setStroke(new BasicStroke(1f));
         for (int x = 18; x < Game.W; x += 24) {
@@ -112,14 +176,12 @@ public class VisualEffects {
         for (int y = 18; y < Game.H; y += 24) {
             g2.drawLine(0, y, Game.W, y);
         }
-
         g2.setColor(new Color(145, 225, 255, 130));
         g2.setStroke(new BasicStroke(1.1f));
         g2.drawRect(1, 1, Game.W - 3, Game.H - 3);
         for (int y = 4; y < Game.H - 4; y += 8) {
             g2.drawLine(Game.W / 2, y, Game.W / 2, Math.min(y + 4, Game.H - 4));
         }
-
         g2.setPaint(oldPaint);
         g2.setStroke(oldStroke);
     }
@@ -145,18 +207,16 @@ public class VisualEffects {
             g2.setColor(new Color(flashColor.getRed(), flashColor.getGreen(), flashColor.getBlue(), alpha));
             g2.fillRect(0, 0, Game.W, Game.H);
         }
-
         for (Particle particle : particles) {
             particle.render(g2);
         }
-
-        if (pointMessageTicks > 0) {
-            int alpha = Math.min(255, pointMessageTicks * 8);
+        if (messageTicks > 0) {
+            int alpha = Math.min(255, messageTicks * 8);
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha / 255f));
-            g2.setColor(pointMessageColor);
+            g2.setColor(messageColor);
             g2.setFont(new Font("Dialog", Font.BOLD, 8));
-            int width = g2.getFontMetrics().stringWidth(pointMessage);
-            g2.drawString(pointMessage, (Game.W - width) / 2, Game.H / 2 + 13);
+            int width = g2.getFontMetrics().stringWidth(message);
+            g2.drawString(message, (Game.W - width) / 2, Game.H / 2 + 13);
             g2.setComposite(AlphaComposite.SrcOver);
         }
     }

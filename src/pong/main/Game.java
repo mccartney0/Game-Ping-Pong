@@ -6,52 +6,83 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.util.Random;
 
 import javax.swing.JFrame;
 
 import pong.entities.Ball;
 import pong.entities.Enemy;
 import pong.entities.Player;
+import pong.ui.SoundManager;
 import pong.ui.UI;
 import pong.ui.VisualEffects;
 
 public class Game extends Canvas implements Runnable, KeyListener {
 
     private static final long serialVersionUID = 1L;
+    private static final Random RANDOM = new Random();
+    private static JFrame frame;
 
     public static final int W = 160;
     public static final int H = 120;
     public static final int SCALE = 3;
     public static final int MAX_SCORE = 7;
 
+    public static final String STATE_MENU = "MENU";
     public static final String STATE_PLAYING = "NORMAL";
+    public static final String STATE_PAUSED = "PAUSED";
     public static final String STATE_GAME_OVER = "GAMEOVER";
     public static final String STATE_WIN = "WIN";
+    public static final String STATE_STATS = "STATS";
 
     public final BufferedImage layer = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
 
-    public static String gameState = STATE_PLAYING;
+    public static String gameState = STATE_MENU;
+    public static GameMode gameMode = GameMode.CLASSIC;
     public static int nivel = 1;
     public static boolean nextNivel;
     public static int playerScore;
     public static int enemyScore;
     public static int highScore;
-    public static long gameTicks;
+    public static int survivalLives = 3;
+    public static int survivalScore;
+    public static int rallyCombo;
+    public static int maxCombo;
+    public static int totalPoints;
+    public static int gameTicks;
+    public static int menuSelection;
+    public static int difficultyLevel = 1;
+    public static boolean soundEnabled = true;
+    public static int volumePercent = 70;
+    public static boolean fullscreen;
+    public static AbilityType selectedAbility = AbilityType.OVERDRIVE;
+    public static AbilityType playerTwoAbility = AbilityType.SHIELD;
+    public static int playerPointMultiplier = 1;
+    public static int topPointMultiplier = 1;
 
     public static Player player;
+    public static Player playerTwo;
     public static Enemy enemy;
     public static Ball ball;
     public static UI ui;
     public static VisualEffects effects;
+    public static Arena arena;
+    public static PowerUp powerUp;
+    public static Stats stats;
+    public static SoundManager sound;
 
     private volatile boolean isRunning;
     private Thread thread;
     private static int stateAnimationTicks;
     private static boolean showStateMessage = true;
+    private static int challengeProgress;
+    private static int challengeTarget = 12;
 
     public Game() {
         setPreferredSize(new Dimension(W * SCALE, H * SCALE));
@@ -60,19 +91,24 @@ public class Game extends Canvas implements Runnable, KeyListener {
         addKeyListener(this);
         effects = new VisualEffects();
         ui = new UI();
-        restartMatch();
+        arena = new Arena();
+        sound = new SoundManager();
+        sound.setVolumePercent(volumePercent);
+        stats = new Stats();
+        stats.load();
+        highScore = stats.bestScore;
+        restartToMenu();
     }
 
     public static void main(String[] args) {
         Game game = new Game();
-        JFrame frame = new JFrame("Neon Ping Pong");
+        frame = new JFrame("Neon Ping Pong");
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(game);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-
         game.start();
     }
 
@@ -93,56 +129,149 @@ public class Game extends Canvas implements Runnable, KeyListener {
         }
     }
 
-    public static void registerPoint(boolean playerScored, double impactX, double impactY) {
-        if (!STATE_PLAYING.equals(gameState)) {
-            return;
-        }
-
-        if (playerScored) {
-            playerScore++;
-            highScore = Math.max(highScore, playerScore);
-        } else {
-            enemyScore++;
-        }
-
-        if (effects != null) {
-            effects.pointScored(playerScored, impactX, impactY);
-        }
-
-        if (playerScore >= MAX_SCORE || enemyScore >= MAX_SCORE) {
-            gameState = playerScore >= MAX_SCORE ? STATE_WIN : STATE_GAME_OVER;
-            stateAnimationTicks = 0;
-            showStateMessage = true;
-            return;
-        }
-
-        nivel = 1 + (playerScore + enemyScore) / 3;
-        Ball.speed = Math.min(4.2, 2.0 + (nivel - 1) * 0.18);
-        Enemy.difficulty = Math.min(0.09, 0.055 + (nivel - 1) * 0.006);
-        nextNivel = true;
-        resetRoundEntities(false);
-    }
-
-    public static void restartMatch() {
-        playerScore = 0;
-        enemyScore = 0;
-        nivel = 1;
-        nextNivel = false;
-        gameState = STATE_PLAYING;
+    public static void restartToMenu() {
+        gameState = STATE_MENU;
+        menuSelection = 0;
         stateAnimationTicks = 0;
         showStateMessage = true;
-        Ball.resetSpeed();
-        Enemy.resetDifficulty();
+        resetMatchValues();
         resetRoundEntities(true);
     }
 
+    public static void startMatch(GameMode mode) {
+        gameMode = mode;
+        resetMatchValues();
+        gameState = STATE_PLAYING;
+        stateAnimationTicks = 0;
+        showStateMessage = true;
+        challengeTarget = mode == GameMode.SURVIVAL ? 25 : 12;
+        arena.reset();
+        resetRoundEntities(true);
+        if (sound != null) {
+            sound.setEnabled(soundEnabled);
+            sound.menu();
+        }
+    }
+
+    public static String getDifficultyLabel() {
+        return difficultyLevel == 1 ? "FACIL" : difficultyLevel == 2 ? "NORMAL" : "DIFICIL";
+    }
+
+    public static void cycleDifficulty() {
+        difficultyLevel = difficultyLevel == 3 ? 1 : difficultyLevel + 1;
+        if (sound != null) {
+            sound.menu();
+        }
+    }
+
+    public static String getVolumeLabel() {
+        return volumePercent + "%";
+    }
+
+    public static void cycleVolume() {
+        volumePercent += 25;
+        if (volumePercent > 100) {
+            volumePercent = 0;
+        }
+        if (sound != null) {
+            sound.setVolumePercent(volumePercent);
+            if (soundEnabled && volumePercent > 0) {
+                sound.menu();
+            }
+        }
+    }
+
+    public static void toggleFullscreen() {
+        if (frame == null) {
+            return;
+        }
+        GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        fullscreen = !fullscreen;
+        frame.dispose();
+        frame.setUndecorated(fullscreen);
+        if (fullscreen) {
+            device.setFullScreenWindow(frame);
+        } else {
+            device.setFullScreenWindow(null);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+    }
+
+    public static void toggleSound() {
+        soundEnabled = !soundEnabled;
+        if (sound != null) {
+            sound.setEnabled(soundEnabled);
+            sound.setVolumePercent(volumePercent);
+            if (soundEnabled) {
+                sound.menu();
+            }
+        }
+    }
+
+    public static void restartMatch() {
+        startMatch(gameMode);
+    }
+
+    private static void resetMatchValues() {
+        playerScore = 0;
+        enemyScore = 0;
+        survivalScore = 0;
+        survivalLives = 3;
+        rallyCombo = 0;
+        maxCombo = 0;
+        totalPoints = 0;
+        nivel = 1;
+        gameTicks = 0;
+        nextNivel = false;
+        playerPointMultiplier = 1;
+        topPointMultiplier = 1;
+        Ball.resetSpeed();
+        Enemy.resetDifficulty();
+        if (arena != null) {
+            arena.reset();
+        }
+        powerUp = null;
+    }
+
     private static void resetRoundEntities(boolean clearEffects) {
-        player = new Player((W - 34) / 2.0, H - 14);
+        player = new Player((W - 34) / 2.0, H - 14, new Color(70, 220, 255), false);
+        playerTwo = new Player((W - 34) / 2.0, 28, new Color(255, 185, 90), true);
         enemy = new Enemy((W - 34) / 2.0, 28);
+        enemy.setBoss(gameMode == GameMode.SURVIVAL && survivalScore >= 3);
         ball = new Ball(W / 2.0 - 2, H / 2.0 - 2);
         if (clearEffects && effects != null) {
             effects.reset();
         }
+    }
+
+    public static Player getTopPlayer() {
+        return gameMode.isVersus() ? playerTwo : null;
+    }
+
+    public static double getTopPaddleX() {
+        return gameMode.isVersus() ? playerTwo.x : enemy.x;
+    }
+
+    public static double getTopPaddleY() {
+        return gameMode.isVersus() ? playerTwo.y : enemy.y;
+    }
+
+    public static int getTopPaddleWidth() {
+        return gameMode.isVersus() ? playerTwo.w : enemy.w;
+    }
+
+    public static int getTopPaddleHeight() {
+        return gameMode.isVersus() ? playerTwo.h : enemy.h;
+    }
+
+    public static int getTargetScore() {
+        return gameMode.getTargetScore() > 0 ? gameMode.getTargetScore() : Integer.MAX_VALUE;
+    }
+
+    public static String getAbilityLabel(boolean bottomPlayer) {
+        return (bottomPlayer ? selectedAbility : playerTwoAbility).getLabel();
     }
 
     public void update(double deltaSeconds) {
@@ -151,8 +280,22 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
         if (STATE_PLAYING.equals(gameState)) {
             player.update(delta);
-            enemy.update(delta);
+            if (gameMode.isVersus()) {
+                playerTwo.update(delta);
+            } else {
+                enemy.update(delta);
+            }
+            if (arena != null) {
+                arena.update(delta, gameMode);
+            }
             ball.update(delta);
+            updatePowerUp(delta);
+            maybeSpawnPowerUp();
+            updateChallenge();
+            if (effects != null) {
+                effects.update(ball.x, ball.y);
+            }
+        } else if (STATE_PAUSED.equals(gameState)) {
             if (effects != null) {
                 effects.update(ball.x, ball.y);
             }
@@ -168,6 +311,260 @@ public class Game extends Canvas implements Runnable, KeyListener {
         }
     }
 
+    private static void updatePowerUp(double deltaSeconds) {
+        if (powerUp == null) {
+            return;
+        }
+        powerUp.update(deltaSeconds);
+        if (powerUp.intersects(player.x, player.y, player.w, player.h)) {
+            collectPowerUp(powerUp, player, true);
+            powerUp = null;
+        } else if (gameMode.isVersus() && powerUp.intersects(playerTwo.x, playerTwo.y, playerTwo.w, playerTwo.h)) {
+            collectPowerUp(powerUp, playerTwo, false);
+            powerUp = null;
+        } else if (!powerUp.active) {
+            powerUp = null;
+        }
+    }
+
+    private static void collectPowerUp(PowerUp collected, Player receiver, boolean bottomPlayer) {
+        switch (collected.type) {
+        case ENERGY:
+            receiver.addEnergy(42);
+            break;
+        case SLOW:
+            ball.slowTicks = 330;
+            break;
+        case SPLIT:
+            ball.splitTicks = 330;
+            break;
+        case MULTI:
+            if (bottomPlayer) {
+                playerPointMultiplier = 2;
+            } else {
+                topPointMultiplier = 2;
+            }
+            break;
+        default:
+            break;
+        }
+        if (effects != null) {
+            effects.powerUpCollected(collected.x, collected.y, collected.colorForType(), collected.type.getLabel());
+        }
+        if (sound != null) {
+            sound.power();
+        }
+    }
+
+    private static void maybeSpawnPowerUp() {
+        if (powerUp != null || gameTicks < 180 || gameTicks % 360 != 0) {
+            return;
+        }
+        if (gameMode == GameMode.CLASSIC && RANDOM.nextDouble() > 0.55) {
+            return;
+        }
+        PowerUpType[] types = PowerUpType.values();
+        PowerUpType type = types[RANDOM.nextInt(types.length)];
+        powerUp = new PowerUp(24 + RANDOM.nextInt(112), 46 + RANDOM.nextInt(25), type);
+        if (effects != null) {
+            effects.powerUpSpawned(powerUp.x, powerUp.y, powerUp.colorForType());
+        }
+    }
+
+    private static void updateChallenge() {
+        if (rallyCombo >= challengeTarget && stats != null) {
+            stats.completeChallenge();
+            challengeTarget += gameMode == GameMode.SURVIVAL ? 10 : 6;
+            if (effects != null) {
+                effects.challengeComplete(challengeTarget);
+            }
+        }
+    }
+
+    public static void goalReached(boolean topBoundary, double impactX, double impactY) {
+        if (!STATE_PLAYING.equals(gameState)) {
+            return;
+        }
+
+        Player concedingPlayer = topBoundary ? getTopPlayer() : player;
+        if (concedingPlayer != null && concedingPlayer.consumeShield()) {
+            if (effects != null) {
+                effects.shieldBreak(impactX, impactY);
+            }
+            if (sound != null) {
+                sound.power();
+            }
+            resetRoundEntities(false);
+            return;
+        }
+
+        boolean playerScored = topBoundary;
+        rallyCombo = playerScored ? rallyCombo + 1 : 0;
+        maxCombo = Math.max(maxCombo, rallyCombo);
+
+        if (gameMode == GameMode.SURVIVAL) {
+            if (playerScored) {
+                survivalScore += playerPointMultiplier;
+                playerPointMultiplier = 1;
+                player.addEnergy(20);
+                totalPoints += 100 + rallyCombo * 20;
+            } else {
+                survivalLives--;
+                if (survivalLives <= 0) {
+                    endMatch(false);
+                    return;
+                }
+            }
+            if (survivalScore >= 3) {
+                enemy.setBoss(true);
+            }
+            nivel = 1 + survivalScore / 3;
+            resetRoundEntities(false);
+        } else {
+            if (playerScored) {
+                playerScore += playerPointMultiplier;
+                playerPointMultiplier = 1;
+                highScore = Math.max(highScore, playerScore);
+                player.addEnergy(20);
+            } else {
+                enemyScore += topPointMultiplier;
+                topPointMultiplier = 1;
+                if (gameMode.isVersus()) {
+                    playerTwo.addEnergy(20);
+                }
+            }
+            totalPoints += 100 + rallyCombo * 25;
+            if (effects != null) {
+                effects.pointScored(playerScored, impactX, impactY);
+            }
+            if (sound != null) {
+                sound.point(playerScored);
+            }
+            if (playerScore >= getTargetScore() || enemyScore >= getTargetScore()) {
+                endMatch(playerScore >= getTargetScore());
+                return;
+            }
+            nivel = 1 + (playerScore + enemyScore) / 3;
+            Ball.speed = Math.min(gameMode == GameMode.TURBO ? 5.1 : 4.4,
+                    (gameMode == GameMode.TURBO ? 2.75 : 2.0) + (nivel - 1) * 0.22);
+            Enemy.difficulty = Math.min(0.11, 0.055 + (nivel - 1) * 0.007 + difficultyLevel * 0.008);
+            resetRoundEntities(false);
+        }
+    }
+
+    public static void registerPoint(boolean playerScored, double impactX, double impactY) {
+        goalReached(playerScored, impactX, impactY);
+    }
+
+    private static void endMatch(boolean won) {
+        gameState = won ? STATE_WIN : STATE_GAME_OVER;
+        stateAnimationTicks = 0;
+        showStateMessage = true;
+        int score = gameMode == GameMode.SURVIVAL ? survivalScore : playerScore;
+        if (stats != null) {
+            stats.recordMatch(won, score, maxCombo, totalPoints);
+            highScore = Math.max(highScore, stats.bestScore);
+        }
+        if (effects != null) {
+            effects.matchEnded(won);
+        }
+        if (sound != null) {
+            sound.point(won);
+        }
+    }
+
+    public static void onPaddleHit(boolean bottomPlayer, double impactX, double impactY) {
+        rallyCombo++;
+        maxCombo = Math.max(maxCombo, rallyCombo);
+        Player receiver = bottomPlayer ? player : getTopPlayer();
+        if (receiver != null) {
+            receiver.addEnergy(7);
+        }
+        if (effects != null) {
+            effects.paddleHit(impactX, impactY, bottomPlayer ? new Color(70, 220, 255) : new Color(255, 150, 80));
+            if (rallyCombo >= 4) {
+                effects.combo(rallyCombo);
+            }
+        }
+        if (sound != null) {
+            sound.paddle();
+        }
+    }
+
+    public static void onWallHit(double x, double y) {
+        if (effects != null) {
+            effects.wallHit(x, y);
+        }
+        if (sound != null) {
+            sound.wall();
+        }
+    }
+
+    public static void onArenaHit(double x, double y) {
+        if (effects != null) {
+            effects.arenaHit(x, y);
+        }
+        if (sound != null) {
+            sound.event();
+        }
+    }
+
+    public static void activateAbility(boolean bottomPlayer) {
+        Player receiver = bottomPlayer ? player : playerTwo;
+        if (receiver == null || !gameMode.isVersus() && !bottomPlayer) {
+            return;
+        }
+        AbilityType ability = bottomPlayer ? selectedAbility : playerTwoAbility;
+        if (!receiver.spendEnergy()) {
+            if (effects != null) {
+                effects.abilityDenied(receiver.x, receiver.y);
+            }
+            return;
+        }
+        switch (ability) {
+        case OVERDRIVE:
+            receiver.overdriveTicks = 210;
+            Ball.speed = Math.min(5.1, Ball.speed + 0.55);
+            break;
+        case SHIELD:
+            receiver.shieldTicks = 600;
+            break;
+        case WIDE:
+            receiver.wideTicks = 360;
+            break;
+        default:
+            break;
+        }
+        if (effects != null) {
+            effects.abilityActivated(receiver.x + receiver.w / 2.0, receiver.y, ability.getLabel());
+        }
+        if (sound != null) {
+            sound.power();
+        }
+    }
+
+    public static void cycleAbility(boolean bottomPlayer) {
+        if (!bottomPlayer && !gameMode.isVersus()) {
+            return;
+        }
+        if (bottomPlayer) {
+            selectedAbility = AbilityType.values()[(selectedAbility.ordinal() + 1) % AbilityType.values().length];
+        } else {
+            playerTwoAbility = AbilityType.values()[(playerTwoAbility.ordinal() + 1) % AbilityType.values().length];
+        }
+        if (sound != null) {
+            sound.menu();
+        }
+    }
+
+    public static void togglePause() {
+        if (STATE_PLAYING.equals(gameState)) {
+            gameState = STATE_PAUSED;
+        } else if (STATE_PAUSED.equals(gameState)) {
+            gameState = STATE_PLAYING;
+        }
+    }
+
     public void render() {
         BufferStrategy bs = getBufferStrategy();
         if (bs == null) {
@@ -180,8 +577,18 @@ public class Game extends Canvas implements Runnable, KeyListener {
             effects.renderBackground(layerGraphics);
             effects.renderTrail(layerGraphics);
         }
+        if (arena != null) {
+            arena.render(layerGraphics);
+        }
+        if (powerUp != null) {
+            powerUp.render(layerGraphics);
+        }
         player.render(layerGraphics);
-        enemy.render(layerGraphics);
+        if (gameMode.isVersus()) {
+            playerTwo.render(layerGraphics);
+        } else {
+            enemy.render(layerGraphics);
+        }
         ball.render(layerGraphics);
         if (effects != null) {
             effects.renderForeground(layerGraphics);
@@ -190,8 +597,15 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
         Graphics g = bs.getDrawGraphics();
         try {
-            g.drawImage(layer, 0, 0, W * SCALE, H * SCALE, null);
-            ui.render(g);
+            Graphics2D output = (Graphics2D) g;
+            int shakeX = effects == null ? 0 : effects.getShakeX() * SCALE;
+            int shakeY = effects == null ? 0 : effects.getShakeY() * SCALE;
+            output.translate(shakeX, shakeY);
+            output.drawImage(layer, 0, 0, W * SCALE, H * SCALE, null);
+            output.translate(-shakeX, -shakeY);
+            if (STATE_PLAYING.equals(gameState) || STATE_PAUSED.equals(gameState)) {
+                ui.render(g);
+            }
             renderStateOverlay(g);
             bs.show();
         } finally {
@@ -203,23 +617,49 @@ public class Game extends Canvas implements Runnable, KeyListener {
         if (STATE_PLAYING.equals(gameState)) {
             return;
         }
-
         Graphics2D g2 = (Graphics2D) g;
-        g2.setColor(new Color(3, 6, 20, 225));
+        g2.setColor(new Color(3, 6, 20, 228));
         g2.fillRect(0, 0, W * SCALE, H * SCALE);
 
-        String title = STATE_WIN.equals(gameState) ? "VOCE VENCEU" : "GAME OVER";
-        String subtitle = STATE_WIN.equals(gameState)
-                ? "Pontuacao maxima alcancada!"
-                : "A maquina chegou a pontuacao maxima.";
-        drawCentered(g2, title, 39, new Font("Dialog", Font.BOLD, 28), Color.white);
-        drawCentered(g2, subtitle, 66, new Font("Dialog", Font.PLAIN, 14), new Color(180, 220, 240));
-        drawCentered(g2, "Placar final  " + playerScore + "  x  " + enemyScore, 91,
-                new Font("Dialog", Font.BOLD, 18), new Color(110, 240, 255));
-
-        if (showStateMessage) {
-            drawCentered(g2, "Pressione ENTER para jogar novamente", 116,
-                    new Font("Dialog", Font.BOLD, 15), new Color(255, 215, 100));
+        if (STATE_MENU.equals(gameState)) {
+            drawCentered(g2, "NEON PING PONG", 25, new Font("Dialog", Font.BOLD, 31), new Color(120, 240, 255));
+            drawCentered(g2, "DUEL OF ENERGY", 39, new Font("Dialog", Font.PLAIN, 13), Color.white);
+            String[] menuItems = { "JOGAR CLASSICO", "SOBREVIVENCIA", "MODO TURBO", "VERSUS LOCAL",
+                    "DIFICULDADE: " + getDifficultyLabel(), "VOLUME: " + getVolumeLabel(),
+                    "SOM: " + (soundEnabled ? "ON" : "OFF"), "ESTATISTICAS", "SAIR" };
+            for (int i = 0; i < menuItems.length; i++) {
+                Color color = i == menuSelection ? new Color(255, 215, 90) : new Color(180, 210, 230);
+                drawCentered(g2, (i == menuSelection ? "> " : "  ") + menuItems[i], 44 + i * 8,
+                        new Font("Dialog", Font.BOLD, i == menuSelection ? 12 : 11), color);
+            }
+            drawCentered(g2, "SETAS + ENTER | LEFT/RIGHT ajusta opcoes", 116, new Font("Dialog", Font.PLAIN, 10), new Color(170, 200, 220));
+        } else if (STATE_PAUSED.equals(gameState)) {
+            drawCentered(g2, "PAUSADO", 45, new Font("Dialog", Font.BOLD, 30), Color.white);
+            drawCentered(g2, "ESC ou ENTER para continuar", 68, new Font("Dialog", Font.BOLD, 15), new Color(255, 215, 90));
+            drawCentered(g2, "M volta ao menu", 87, new Font("Dialog", Font.PLAIN, 13), new Color(180, 220, 240));
+        } else if (STATE_STATS.equals(gameState)) {
+            drawCentered(g2, "ESTATISTICAS", 24, new Font("Dialog", Font.BOLD, 27), new Color(120, 240, 255));
+            drawCentered(g2, "Rank " + stats.getRank() + "  |  XP " + stats.xp, 42, new Font("Dialog", Font.BOLD, 14), Color.white);
+            drawCentered(g2, "Partidas " + stats.matches + "   Vitorias " + stats.wins + "   Derrotas " + stats.losses, 60,
+                    new Font("Dialog", Font.PLAIN, 13), new Color(180, 220, 240));
+            drawCentered(g2, "Melhor combo " + stats.bestCombo + "   Melhor score " + stats.bestScore, 76,
+                    new Font("Dialog", Font.PLAIN, 13), new Color(180, 220, 240));
+            drawCentered(g2, "Arenas desbloqueadas " + stats.unlockedArena + "   Desafios " + stats.completedChallenges, 92,
+                    new Font("Dialog", Font.PLAIN, 13), new Color(180, 220, 240));
+            drawCentered(g2, "ENTER ou ESC para voltar", 114, new Font("Dialog", Font.BOLD, 14), new Color(255, 215, 90));
+        } else {
+            String title = STATE_WIN.equals(gameState) ? "VOCE VENCEU" : "GAME OVER";
+            String subtitle = gameMode == GameMode.SURVIVAL
+                    ? "Sobreviveu com " + survivalScore + " pontos e " + maxCombo + " combo"
+                    : "Placar final  " + playerScore + "  x  " + enemyScore;
+            drawCentered(g2, title, 35, new Font("Dialog", Font.BOLD, 29), Color.white);
+            drawCentered(g2, subtitle, 59, new Font("Dialog", Font.BOLD, 15), new Color(160, 230, 245));
+            drawCentered(g2, "SCORE " + totalPoints + "  |  RECORDE " + highScore, 78,
+                    new Font("Dialog", Font.PLAIN, 14), new Color(180, 220, 240));
+            if (showStateMessage) {
+                drawCentered(g2, "ENTER joga novamente  |  ESC volta ao menu", 108,
+                        new Font("Dialog", Font.BOLD, 13), new Color(255, 215, 90));
+            }
         }
     }
 
@@ -234,15 +674,12 @@ public class Game extends Canvas implements Runnable, KeyListener {
     public void run() {
         long lastTime = System.nanoTime();
         requestFocusInWindow();
-
         while (isRunning) {
             long now = System.nanoTime();
             double deltaSeconds = (now - lastTime) / 1_000_000_000.0;
             lastTime = now;
-
             update(deltaSeconds);
             render();
-
             try {
                 Thread.sleep(2L);
             } catch (InterruptedException e) {
@@ -260,14 +697,125 @@ public class Game extends Canvas implements Runnable, KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
+
+        if (STATE_MENU.equals(gameState)) {
+            if (keyCode == KeyEvent.VK_F11) {
+                toggleFullscreen();
+            } else if (keyCode == KeyEvent.VK_UP) {
+                menuSelection = (menuSelection + 8) % 9;
+                sound.menu();
+            } else if (keyCode == KeyEvent.VK_DOWN) {
+                menuSelection = (menuSelection + 1) % 9;
+                sound.menu();
+            } else if (keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_RIGHT) {
+                if (menuSelection == 4) {
+                    cycleDifficulty();
+                } else if (menuSelection == 5) {
+                    cycleVolume();
+                } else if (menuSelection == 6) {
+                    toggleSound();
+                }
+            } else if (keyCode == KeyEvent.VK_ENTER) {
+                selectMenuItem();
+            }
+            return;
+        }
+
+        if (STATE_STATS.equals(gameState)) {
+            if (keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_ESCAPE) {
+                gameState = STATE_MENU;
+            }
+            return;
+        }
+
+        if (STATE_PAUSED.equals(gameState)) {
+            if (keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_ENTER) {
+                togglePause();
+            } else if (keyCode == KeyEvent.VK_M) {
+                restartToMenu();
+            }
+            return;
+        }
+
+        if (STATE_GAME_OVER.equals(gameState) || STATE_WIN.equals(gameState)) {
+            if (keyCode == KeyEvent.VK_ENTER) {
+                restartMatch();
+            } else if (keyCode == KeyEvent.VK_ESCAPE) {
+                restartToMenu();
+            }
+            return;
+        }
+
         if (keyCode == KeyEvent.VK_RIGHT || keyCode == KeyEvent.VK_D) {
             player.right = true;
         }
         if (keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_A) {
             player.left = true;
         }
-        if (keyCode == KeyEvent.VK_ENTER && !STATE_PLAYING.equals(gameState)) {
-            restartMatch();
+        if (keyCode == KeyEvent.VK_F11) {
+            toggleFullscreen();
+        }
+        if (keyCode == KeyEvent.VK_SPACE) {
+            activateAbility(true);
+        }
+        if (keyCode == KeyEvent.VK_Q) {
+            cycleAbility(true);
+        }
+        if (keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_P) {
+            togglePause();
+        }
+        if (keyCode == KeyEvent.VK_M) {
+            restartToMenu();
+        }
+
+        if (gameMode.isVersus()) {
+            if (keyCode == KeyEvent.VK_L) {
+                playerTwo.right = true;
+            }
+            if (keyCode == KeyEvent.VK_J) {
+                playerTwo.left = true;
+            }
+            if (keyCode == KeyEvent.VK_I) {
+                activateAbility(false);
+            }
+            if (keyCode == KeyEvent.VK_O) {
+                cycleAbility(false);
+            }
+        }
+    }
+
+    private void selectMenuItem() {
+        switch (menuSelection) {
+        case 0:
+            startMatch(GameMode.CLASSIC);
+            break;
+        case 1:
+            startMatch(GameMode.SURVIVAL);
+            break;
+        case 2:
+            startMatch(GameMode.TURBO);
+            break;
+        case 3:
+            startMatch(GameMode.VERSUS);
+            break;
+        case 4:
+            cycleDifficulty();
+            break;
+        case 5:
+            cycleVolume();
+            break;
+        case 6:
+            toggleSound();
+            break;
+        case 7:
+            gameState = STATE_STATS;
+            break;
+        case 8:
+            stop();
+            System.exit(0);
+            break;
+        default:
+            break;
         }
     }
 
@@ -279,6 +827,14 @@ public class Game extends Canvas implements Runnable, KeyListener {
         }
         if (keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_A) {
             player.left = false;
+        }
+        if (gameMode.isVersus()) {
+            if (keyCode == KeyEvent.VK_L) {
+                playerTwo.right = false;
+            }
+            if (keyCode == KeyEvent.VK_J) {
+                playerTwo.left = false;
+            }
         }
     }
 }
