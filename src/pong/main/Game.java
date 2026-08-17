@@ -16,246 +16,269 @@ import javax.swing.JFrame;
 import pong.entities.Ball;
 import pong.entities.Enemy;
 import pong.entities.Player;
-import pong.ui.Menu;
 import pong.ui.UI;
-
+import pong.ui.VisualEffects;
 
 public class Game extends Canvas implements Runnable, KeyListener {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	public static int W = 160;
-	public static int H = 120;
-	public static int SCALE = 3;
+    private static final long serialVersionUID = 1L;
 
-	// Renderizando, parando de piscar a tela java 8 -
-	public BufferedImage layer = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
+    public static final int W = 160;
+    public static final int H = 120;
+    public static final int SCALE = 3;
+    public static final int MAX_SCORE = 7;
 
-	public static String gameState = "NORMAL";
-	@SuppressWarnings("unused")
-	private boolean isRunning = true;
-	@SuppressWarnings("unused")
-	private Thread thread;
+    public static final String STATE_PLAYING = "NORMAL";
+    public static final String STATE_GAME_OVER = "GAMEOVER";
+    public static final String STATE_WIN = "WIN";
 
-	private boolean restartGame = false;
-	private int framesGameOver = 0;
-	private boolean showMessageGameOver = true;
-	
-	public static int nivel = 1;
-	public static boolean nextNivel;
-	public static Player player;
-	public static Enemy enemy;
-	public static Ball ball;
-	public static Menu menu;
-	public static UI ui;
+    public final BufferedImage layer = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
 
-	public Game() {
-		this.setPreferredSize(new Dimension(W * SCALE, H * SCALE));
-		this.addKeyListener(this);
-		player = new Player(60, H - 8);
-		enemy = new Enemy(60, 1);
-		ball = new Ball(100, H / 10 - 5);
-		ui = new UI(100, 1);
-	}
+    public static String gameState = STATE_PLAYING;
+    public static int nivel = 1;
+    public static boolean nextNivel;
+    public static int playerScore;
+    public static int enemyScore;
+    public static int highScore;
+    public static long gameTicks;
 
-//	public synchronized void stop() {
-//		isRunning = false;
-//		try {
-//			thread.join();
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
-//	}
+    public static Player player;
+    public static Enemy enemy;
+    public static Ball ball;
+    public static UI ui;
+    public static VisualEffects effects;
 
-	public static void main(String[] args) {
-		Game game = new Game();
-		JFrame frame = new JFrame("Ping Pong");
-		frame.setResizable(false);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.add(game);
-		frame.pack();
-		frame.setLocationRelativeTo(null);
-		frame.setVisible(true);
+    private volatile boolean isRunning;
+    private Thread thread;
+    private static int stateAnimationTicks;
+    private static boolean showStateMessage = true;
 
-		new Thread(game).start();
+    public Game() {
+        setPreferredSize(new Dimension(W * SCALE, H * SCALE));
+        setIgnoreRepaint(true);
+        setFocusable(true);
+        addKeyListener(this);
+        effects = new VisualEffects();
+        ui = new UI();
+        restartMatch();
+    }
 
-	}
+    public static void main(String[] args) {
+        Game game = new Game();
+        JFrame frame = new JFrame("Neon Ping Pong");
+        frame.setResizable(false);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(game);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
 
-	public void update() {
-		if (gameState == "NORMAL") {
-			this.restartGame = false; // Prevenção
-			player.update();
-			enemy.update();
-			ball.update();
-		}
+        game.start();
+    }
 
-		if (restartGame) {
-			this.restartGame = false;
-			Game.gameState = "NORMAL";
-		}
+    public synchronized void start() {
+        if (isRunning) {
+            return;
+        }
+        isRunning = true;
+        thread = new Thread(this, "ping-pong-game-loop");
+        thread.start();
+        requestFocusInWindow();
+    }
 
-		if (gameState == "GAMEOVER") {
-			// Forma de Fazer animação - Game over
-			this.framesGameOver++;
-			if (this.framesGameOver == 30) {
-				this.framesGameOver = 0;
-				if (this.showMessageGameOver)
-					this.showMessageGameOver = false;
-				else
-					this.showMessageGameOver = true;
-			}
+    public synchronized void stop() {
+        isRunning = false;
+        if (thread != null) {
+            thread.interrupt();
+        }
+    }
 
-		}
-		
-		if(nextNivel) {
-			if(1 < Game.nivel) {
-				nextNivel = false;
-				Ball.speed += 0.5;
-				Enemy.difficulty += 0.05;
-			}
-		}
-		
-		
-	}//FIM UPDATE
+    public static void registerPoint(boolean playerScored, double impactX, double impactY) {
+        if (!STATE_PLAYING.equals(gameState)) {
+            return;
+        }
 
-	public void render() {
-		BufferStrategy bs = this.getBufferStrategy();
-		if (bs == null) {
-			this.createBufferStrategy(3);
-			return;
+        if (playerScored) {
+            playerScore++;
+            highScore = Math.max(highScore, playerScore);
+        } else {
+            enemyScore++;
+        }
 
-		}
-		Graphics g = layer.getGraphics();
-		g.setColor(Color.black);
-		g.fillRect(0, 0, W, H);
+        if (effects != null) {
+            effects.pointScored(playerScored, impactX, impactY);
+        }
 
-		player.render(g);
-		enemy.render(g);
-		ball.render(g);
-		g.dispose();
+        if (playerScore >= MAX_SCORE || enemyScore >= MAX_SCORE) {
+            gameState = playerScore >= MAX_SCORE ? STATE_WIN : STATE_GAME_OVER;
+            stateAnimationTicks = 0;
+            showStateMessage = true;
+            return;
+        }
 
-		g = bs.getDrawGraphics();
-		g.drawImage(layer, 0, 0, W * SCALE, H * SCALE, null);
-		ui.render(g);
-//		g.drawImage(layer, 100, 0, W * SCALE -100, H * SCALE, null);
-		
-		if (gameState == "GAMEOVER") {
-			Graphics2D g2 = (Graphics2D) g;
-			g2.setColor(new Color(0, 0, 0, 230));
-			g2.fillRect(0, 0, W * SCALE, H * SCALE);
-			g.setFont(new Font("arial", Font.BOLD, 36));
-			g.setColor(Color.white);
-			g.drawString("Game Over", 150, 150);
-			g.setFont(new Font("arial", Font.BOLD, 25));
+        nivel = 1 + (playerScore + enemyScore) / 3;
+        Ball.speed = Math.min(4.2, 2.0 + (nivel - 1) * 0.18);
+        Enemy.difficulty = Math.min(0.09, 0.055 + (nivel - 1) * 0.006);
+        nextNivel = true;
+        resetRoundEntities(false);
+    }
 
-			if (showMessageGameOver) {
-				g.drawString(">Pressione Enter para reiniciar<", 50, 234);
-			}
-		}
-		
-		if (gameState == "WIN") {
-			Graphics2D g2 = (Graphics2D) g;
-			g2.setColor(new Color(0, 0, 0, 230));
-			g2.fillRect(0, 0, W * SCALE, H * SCALE);
-			g.setFont(new Font("arial", Font.BOLD, 36));
-			g.setColor(Color.white);
-			g.drawString("You WIN!", 160, 130);
-			g.setFont(new Font("arial", Font.BOLD, 25));
-			g.drawString("Para avançar de nível",100, 204);
-			g.drawString(">Pressione Enter<", 125, 234);
-		}
-		bs.show();
-	}
+    public static void restartMatch() {
+        playerScore = 0;
+        enemyScore = 0;
+        nivel = 1;
+        nextNivel = false;
+        gameState = STATE_PLAYING;
+        stateAnimationTicks = 0;
+        showStateMessage = true;
+        Ball.resetSpeed();
+        Enemy.resetDifficulty();
+        resetRoundEntities(true);
+    }
 
-	@Override // Game looping
-	public void run() {
+    private static void resetRoundEntities(boolean clearEffects) {
+        player = new Player((W - 34) / 2.0, H - 14);
+        enemy = new Enemy((W - 34) / 2.0, 28);
+        ball = new Ball(W / 2.0 - 2, H / 2.0 - 2);
+        if (clearEffects && effects != null) {
+            effects.reset();
+        }
+    }
 
-		while (true) {
-			requestFocus(); // Para focar automaticamente na janela e os comandos funcionarem, sem precisar
-							// clicar, basta inserir na primeira linha do Game Looping:
-			update();
-			render();
-			try {
-				Thread.sleep(1000 / 60);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+    public void update(double deltaSeconds) {
+        double delta = Math.min(0.05, Math.max(0.001, deltaSeconds));
+        gameTicks++;
 
-	}
-//	public void run() {
-//
-//		long lastTime = System.nanoTime();
-//		double amountOfUpdates = 60.0;
-//		double ns = 1000000000 / amountOfUpdates;
-//		double delta = 0;
-//		@SuppressWarnings("unused")
-//		int frames = 0;
-//		double timer = System.currentTimeMillis();
-//		requestFocus();
-//		while (isRunning) {
-//			long now = System.nanoTime();
-//			delta += (now - lastTime) / ns;
-//			lastTime = now;
-//
-//			if (delta >= 1) {
-//				update();
-//				render();
-//				frames++;
-//				delta--;
-//			}
-//
-//			if (System.currentTimeMillis() - timer >= 1000) {
-////				System.out.println("FPS: " + frames);
-//				frames = 0;
-//				timer += 1000;
-//			}
-//
-//		}
-//
-//		stop();
-//	}
+        if (STATE_PLAYING.equals(gameState)) {
+            player.update(delta);
+            enemy.update(delta);
+            ball.update(delta);
+            if (effects != null) {
+                effects.update(ball.x, ball.y);
+            }
+        } else {
+            stateAnimationTicks++;
+            if (stateAnimationTicks >= 30) {
+                stateAnimationTicks = 0;
+                showStateMessage = !showStateMessage;
+            }
+            if (effects != null) {
+                effects.update(ball.x, ball.y);
+            }
+        }
+    }
 
-	@Override
-	public void keyTyped(KeyEvent e) {
+    public void render() {
+        BufferStrategy bs = getBufferStrategy();
+        if (bs == null) {
+            createBufferStrategy(3);
+            return;
+        }
 
-	}
+        Graphics2D layerGraphics = layer.createGraphics();
+        if (effects != null) {
+            effects.renderBackground(layerGraphics);
+            effects.renderTrail(layerGraphics);
+        }
+        player.render(layerGraphics);
+        enemy.render(layerGraphics);
+        ball.render(layerGraphics);
+        if (effects != null) {
+            effects.renderForeground(layerGraphics);
+        }
+        layerGraphics.dispose();
 
-	@Override
-	public void keyPressed(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-			player.right = true;
-		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-			player.left = true;
-		}
+        Graphics g = bs.getDrawGraphics();
+        try {
+            g.drawImage(layer, 0, 0, W * SCALE, H * SCALE, null);
+            ui.render(g);
+            renderStateOverlay(g);
+            bs.show();
+        } finally {
+            g.dispose();
+        }
+    }
 
-		if (e.getKeyCode() == KeyEvent.VK_A) {
-			player.left = true;
-		} else if (e.getKeyCode() == KeyEvent.VK_D) {
-			player.right = true;
-		}
+    private void renderStateOverlay(Graphics g) {
+        if (STATE_PLAYING.equals(gameState)) {
+            return;
+        }
 
-		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-			this.restartGame = true;
-		}
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setColor(new Color(3, 6, 20, 225));
+        g2.fillRect(0, 0, W * SCALE, H * SCALE);
 
-	}
+        String title = STATE_WIN.equals(gameState) ? "VOCE VENCEU" : "GAME OVER";
+        String subtitle = STATE_WIN.equals(gameState)
+                ? "Pontuacao maxima alcancada!"
+                : "A maquina chegou a pontuacao maxima.";
+        drawCentered(g2, title, 39, new Font("Dialog", Font.BOLD, 28), Color.white);
+        drawCentered(g2, subtitle, 66, new Font("Dialog", Font.PLAIN, 14), new Color(180, 220, 240));
+        drawCentered(g2, "Placar final  " + playerScore + "  x  " + enemyScore, 91,
+                new Font("Dialog", Font.BOLD, 18), new Color(110, 240, 255));
 
-	@Override
-	public void keyReleased(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-			player.right = false;
-		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-			player.left = false;
-		}
+        if (showStateMessage) {
+            drawCentered(g2, "Pressione ENTER para jogar novamente", 116,
+                    new Font("Dialog", Font.BOLD, 15), new Color(255, 215, 100));
+        }
+    }
 
-		if (e.getKeyCode() == KeyEvent.VK_A) {
-			player.left = false;
-		} else if (e.getKeyCode() == KeyEvent.VK_D) {
-			player.right = false;
-		}
-	}
+    private void drawCentered(Graphics2D g, String text, int logicalY, Font font, Color color) {
+        g.setFont(font);
+        g.setColor(color);
+        int x = (W * SCALE - g.getFontMetrics().stringWidth(text)) / 2;
+        g.drawString(text, x, logicalY * SCALE);
+    }
 
+    @Override
+    public void run() {
+        long lastTime = System.nanoTime();
+        requestFocusInWindow();
+
+        while (isRunning) {
+            long now = System.nanoTime();
+            double deltaSeconds = (now - lastTime) / 1_000_000_000.0;
+            lastTime = now;
+
+            update(deltaSeconds);
+            render();
+
+            try {
+                Thread.sleep(2L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        // Entrada tratada em keyPressed/keyReleased.
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        int keyCode = e.getKeyCode();
+        if (keyCode == KeyEvent.VK_RIGHT || keyCode == KeyEvent.VK_D) {
+            player.right = true;
+        }
+        if (keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_A) {
+            player.left = true;
+        }
+        if (keyCode == KeyEvent.VK_ENTER && !STATE_PLAYING.equals(gameState)) {
+            restartMatch();
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        int keyCode = e.getKeyCode();
+        if (keyCode == KeyEvent.VK_RIGHT || keyCode == KeyEvent.VK_D) {
+            player.right = false;
+        }
+        if (keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_A) {
+            player.left = false;
+        }
+    }
 }
