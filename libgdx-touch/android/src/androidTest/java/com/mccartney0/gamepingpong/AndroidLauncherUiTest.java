@@ -1,12 +1,10 @@
 package com.mccartney0.gamepingpong;
 
-import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.assertion.ViewAssertions.matches;
-import static androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
-import static androidx.test.espresso.matcher.ViewMatchers.isRoot;
-import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
+import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -24,14 +22,36 @@ public class AndroidLauncherUiTest {
             new ActivityScenarioRule<>(AndroidLauncher.class);
 
     @Test
-    public void launcherShowsGameSurface() {
-        onView(isRoot()).check(matches(isDisplayed()));
+    public void launcherCreatesGameSurface() {
+        activityRule.getScenario().onActivity(activity -> {
+            assertNotNull(activity.getGame());
+            assertNotNull(activity.getWindow().getDecorView());
+        });
     }
 
     @Test
     public void bannerStartsHiddenDuringGameplay() {
-        onView(isAssignableFrom(AdView.class))
-                .check(matches(withEffectiveVisibility(
-                        androidx.test.espresso.matcher.ViewMatchers.Visibility.GONE)));
+        activityRule.getScenario().onActivity(activity -> {
+            AdView banner = findAdView(activity.getWindow().getDecorView());
+            assertNotNull("banner deve estar anexado ao launcher", banner);
+            assertEquals(View.GONE, banner.getVisibility());
+        });
+    }
+
+    private static AdView findAdView(View view) {
+        if (view instanceof AdView) {
+            return (AdView) view;
+        }
+        if (!(view instanceof ViewGroup)) {
+            return null;
+        }
+        ViewGroup group = (ViewGroup) view;
+        for (int index = 0; index < group.getChildCount(); index++) {
+            AdView result = findAdView(group.getChildAt(index));
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
     }
 }
