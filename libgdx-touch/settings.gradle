@@ -17,4 +17,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'GamePingPongTouch'
-include ':core', ':android', ':lwjgl3'
+include ':core', ':android', ':lwjgl3', ':release-updater'
+project(':release-updater').projectDir = new File(settingsDir, '../release-updater')

@@ -167,3 +167,12 @@ A sequência do pipeline é:
 A etapa instrumentada usa um emulador API 29/x86 com imagem padrão, snapshot e aceleração Linux desativados e opções headless para reduzir falhas de boot; o APK e o target continuam em API 35. O APK debug é publicado como artefato por 14 dias. Falhas preservam relatórios Gradle e resultados de testes quando existirem.
 
 O workflow de debug não injeta IDs de produção nem credenciais de assinatura. O workflow separado [`.github/workflows/android-release.yml`](../.github/workflows/android-release.yml), acionado manualmente ou por tag `v*.*.*`, restaura a upload key apenas no runner, exige todos os IDs e Secrets de produção e executa `bundleRelease`; se qualquer valor obrigatório estiver ausente, o job falha antes de gerar o AAB.
+
+
+## Auto-updater e Releases
+
+O módulo Android executa `AndroidAutoUpdater.check(this)` no launcher. A verificação é assíncrona, limitada a uma vez por dia e não bloqueia o jogo. Ao encontrar uma versão maior, o app baixa `game-ping-pong-touch-android.apk`, verifica o checksum `.sha256`, grava o arquivo no cache privado e abre o instalador por `FileProvider`.
+
+O launcher `lwjgl3` executa o mesmo contrato para `game-ping-pong-touch-desktop.zip`. O pacote é baixado e validado em `~/.game-ping-pong/updates`; depois o sistema abre a pasta para que o usuário extraia a nova distribuição após fechar o jogo.
+
+O módulo `release-updater` é compartilhado pelos dois launchers e também pelo app Java/AWT original. Ele usa apenas APIs Java 8, consulta a última GitHub Release pública e nunca recebe token de escrita. A publicação é feita exclusivamente pelo workflow com `GITHUB_TOKEN` e permissão `contents: write`.

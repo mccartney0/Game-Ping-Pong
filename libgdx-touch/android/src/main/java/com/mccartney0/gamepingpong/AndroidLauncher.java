@@ -7,6 +7,7 @@ import android.widget.FrameLayout;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
+import com.mccartney0.gamepingpong.update.AndroidAutoUpdater;
 
 public class AndroidLauncher extends AndroidApplication {
 
@@ -16,6 +17,7 @@ public class AndroidLauncher extends AndroidApplication {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AndroidAutoUpdater.check(this);
         AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
         configuration.useImmersiveMode = true;
         configuration.useAccelerometer = false;

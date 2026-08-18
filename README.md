@@ -41,3 +41,28 @@ A opção `SKINS E ITENS` permite trocar skins de raquete, bola, arena e título
 ## Campanha de bosses
 
 A `CAMPANHA BOSS` apresenta quatro chefes: Volt, Mirror, Twin e Gravity. Cada chefe altera o alvo da IA ou a trajetória da bola de forma diferente. O jogador possui três vidas e precisa derrotar cada chefe por impactos sucessivos; derrotas e XP são registradas no save local.
+
+
+## Atualização automática via GitHub Releases
+
+Os três produtos distribuíveis consultam a última Release pública de `mccartney0/Game-Ping-Pong` em segundo plano, com intervalo controlado no Android. O cliente compartilhado compara `tag_name` semanticamente, localiza o asset específico da plataforma e valida o SHA-256 antes de aceitar o arquivo. A consulta usa o endpoint oficial `GET /repos/{owner}/{repo}/releases/latest`, que retorna a última Release publicada não-prerelease.[^1]
+
+| Produto | Asset da Release | Comportamento |
+|---|---|---|
+| Java/AWT original | `neon-ping-pong-awt.jar` | Pergunta, baixa, valida e abre a pasta de atualização; o JAR atual é substituído depois de fechar o processo. |
+| libGDX Android | `game-ping-pong-touch-android.apk` | Pergunta, baixa para cache privado, valida SHA-256 e abre o instalador Android por `FileProvider`. |
+| libGDX desktop | `game-ping-pong-touch-desktop.zip` | Pergunta, baixa, valida e abre a pasta para extração após o encerramento do jogo. |
+
+O workflow [`.github/workflows/android-release.yml`](.github/workflows/android-release.yml) é acionado por tags `vX.Y.Z` ou manualmente. Ele compila os testes do core, o APK/AAB Android release, o ZIP desktop libGDX e o JAR AWT; publica os binários, checksums e `release-manifest.json` na mesma GitHub Release. O workflow precisa de `contents: write` para publicar assets usando `GITHUB_TOKEN`, seguindo o princípio de permissões mínimas recomendado pela documentação do Actions.[^2]
+
+Para publicar uma versão, faça push de uma tag sem alterar o nome dos assets:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+O APK de atualização deve ser assinado com a mesma chave usada na instalação anterior; por isso, o workflow exige `ANDROID_KEYSTORE_BASE64`, as quatro credenciais de assinatura e os valores de produção do Android antes de gerar a Release. A instalação de APK é encaminhada ao sistema Android por uma URI `content://` concedida pelo `FileProvider`, em vez de expor um caminho privado de arquivo.
+
+[^1]: [GitHub REST API — Get the latest release](https://docs.github.com/en/rest/releases/releases#get-the-latest-release)
+[^2]: [GitHub Actions — Use GITHUB_TOKEN for authentication in workflows](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication)

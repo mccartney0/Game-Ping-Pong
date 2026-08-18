@@ -6,5 +6,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="release-updater/src/main/java"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
