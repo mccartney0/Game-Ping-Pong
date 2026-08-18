@@ -126,14 +126,18 @@ dependencies {
 
 tasks.register('copyAndroidNatives') {
     doFirst {
+        delete file('src/main/jniLibs')
         file('src/main/jniLibs').mkdirs()
     }
     doLast {
         configurations.natives.files.each { archive ->
+            def abi = archive.name
+                    .replaceFirst(/^.*-natives-/, '')
+                    .replaceFirst(/\.(jar|zip)$/, '')
             copy {
                 from zipTree(archive)
-                into file('src/main/jniLibs')
-                include '**/*.so'
+                into file("src/main/jniLibs/${abi}")
+                include 'libgdx.so'
             }
         }
     }
