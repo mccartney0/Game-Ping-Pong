@@ -58,12 +58,13 @@ jobs:
       - name: Run Android UI instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 30
           target: google_apis
-          arch: x86_64
+          arch: x86
           profile: pixel_2
-          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect
+          emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
           force-avd-creation: true
+          boot-timeout: 600
           disable-animations: true
           script: cd libgdx-touch && ./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace
 
