@@ -26,6 +26,14 @@ configurations {
     natives
 }
 
+// AGP 8.1.4/Gradle 8.2 build against API 35; prevent newer transitive AndroidX
+// Core artifacts from silently requiring AGP 8.9.1 and compileSdk 36.
+configurations.configureEach {
+    resolutionStrategy.force(
+            'androidx.core:core:1.13.1',
+            'androidx.core:core-ktx:1.13.1')
+}
+
 android {
     namespace 'com.mccartney0.gamepingpong'
     compileSdk 35
