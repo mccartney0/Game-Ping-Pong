@@ -176,3 +176,22 @@ O módulo Android executa `AndroidAutoUpdater.check(this)` no launcher. A verifi
 O launcher `lwjgl3` executa o mesmo contrato para `game-ping-pong-touch-desktop.zip`. O pacote é baixado e validado em `~/.game-ping-pong/updates`; depois o sistema abre a pasta para que o usuário extraia a nova distribuição após fechar o jogo.
 
 O módulo `release-updater` é compartilhado pelos dois launchers e também pelo app Java/AWT original. Ele usa apenas APIs Java 8, consulta a última GitHub Release pública e nunca recebe token de escrita. A publicação é feita exclusivamente pelo workflow com `GITHUB_TOKEN` e permissão `contents: write`.
+
+
+## Progresso visual e teste do auto-updater
+
+O download dos assets agora usa `release-updater` em streaming. O Android mostra `ProgressBar`, porcentagem, tamanho, velocidade, ETA e botão de cancelamento. Os dois launchers Desktop usam `JDialog`/`JProgressBar` com os mesmos dados. A transferência grava primeiro `asset.part`, remove o parcial em caso de cancelamento ou erro e valida o SHA-256 antes de concluir.
+
+O cliente compartilhado aceita `-Dgithub.api.base=http://127.0.0.1:8787` para testes locais. O mock está em [`../.github/scripts/mock-github-release.py`](../.github/scripts/mock-github-release.py) e espera os três nomes de asset da Release. A classe `DownloadProgressTest` executa testes de porcentagem, ETA, streaming, cancelamento e checksum.
+
+Para validar os módulos Java:
+
+```bash
+./gradlew :release-updater:test :core:test :lwjgl3:compileJava --no-daemon
+```
+
+Para validar o Android:
+
+```bash
+./gradlew :android:assembleDebug --no-daemon
+```

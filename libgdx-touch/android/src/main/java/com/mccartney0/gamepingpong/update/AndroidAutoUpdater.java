@@ -1,22 +1,30 @@
 package com.mccartney0.gamepingpong.update;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 
 import com.mccartney0.gamepingpong.BuildConfig;
+import com.mccartney0.release.DownloadListener;
+import com.mccartney0.release.DownloadProgress;
 import com.mccartney0.release.GitHubReleaseUpdater;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class AndroidAutoUpdater {
     private static final String REPOSITORY = "mccartney0/Game-Ping-Pong";
@@ -30,7 +38,7 @@ public final class AndroidAutoUpdater {
     private AndroidAutoUpdater() { }
 
     public static void check(Activity activity) {
-        if (activity == null || !shouldCheck(activity)) return;
+        if (activity == null || activity.isFinishing() || !shouldCheck(activity)) return;
         activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit().putLong(LAST_CHECK, System.currentTimeMillis()).apply();
         EXECUTOR.execute(() -> {
@@ -53,7 +61,8 @@ public final class AndroidAutoUpdater {
     }
 
     private static void showUpdateDialog(Activity activity, GitHubReleaseUpdater.UpdateInfo update) {
-        new android.app.AlertDialog.Builder(activity)
+        if (activity.isFinishing()) return;
+        new AlertDialog.Builder(activity)
                 .setTitle("Atualização disponível")
                 .setMessage("Game Ping Pong Touch " + update.version + " está disponível.")
                 .setNegativeButton("Depois", null)
@@ -62,32 +71,69 @@ public final class AndroidAutoUpdater {
     }
 
     private static void downloadAndInstall(Activity activity, GitHubReleaseUpdater.UpdateInfo update) {
-        Toast.makeText(activity, "Baixando atualização…", Toast.LENGTH_SHORT).show();
-        EXECUTOR.execute(() -> {
-            try {
-                byte[] apk = GitHubReleaseUpdater.download(update.downloadUrl);
-                String expectedSha = update.checksumUrl == null
-                        ? null : GitHubReleaseUpdater.downloadText(update.checksumUrl).split("\\s+")[0];
-                if (!GitHubReleaseUpdater.sha256Matches(apk, expectedSha)) {
-                    throw new IllegalStateException("Checksum SHA-256 inválido");
-                }
-                File directory = new File(activity.getCacheDir(), "updates");
-                if (!directory.exists() && !directory.mkdirs()) {
-                    throw new IllegalStateException("Não foi possível criar o cache de atualização");
-                }
-                File apkFile = new File(directory, ASSET_NAME);
-                try (FileOutputStream output = new FileOutputStream(apkFile)) {
-                    output.write(apk);
-                }
-                MAIN.post(() -> launchInstaller(activity, apkFile));
-            } catch (Exception error) {
-                MAIN.post(() -> Toast.makeText(
-                        activity, "Não foi possível atualizar agora.", Toast.LENGTH_LONG).show());
+        if (activity.isFinishing()) return;
+        File directory = new File(activity.getCacheDir(), "updates");
+        File apkFile = new File(directory, ASSET_NAME);
+        DownloadUi ui = new DownloadUi(activity);
+
+        EXECUTOR.execute(() -> GitHubReleaseUpdater.downloadToFile(
+                update.downloadUrl,
+                apkFile,
+                ui.cancelled,
+                new DownloadListener() {
+                    @Override
+                    public void onProgress(DownloadProgress progress) {
+                        MAIN.post(() -> ui.update(progress));
+                    }
+
+                    @Override
+                    public void onCompleted(File file) {
+                        try {
+                            String expectedSha = update.checksumUrl == null
+                                    ? null
+                                    : GitHubReleaseUpdater.downloadText(update.checksumUrl)
+                                            .split("\\s+")[0];
+                            if (!GitHubReleaseUpdater.sha256Matches(file, expectedSha)) {
+                                throw new IllegalStateException("Checksum SHA-256 inválido");
+                            }
+                            MAIN.post(() -> {
+                                ui.close();
+                                launchInstaller(activity, file);
+                            });
+                        } catch (Exception error) {
+                            if (file.exists()) file.delete();
+                            postError(activity, ui, "A validação da atualização falhou.");
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled() {
+                        MAIN.post(() -> {
+                            ui.close();
+                            if (!activity.isFinishing()) {
+                                Toast.makeText(activity, "Download cancelado.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception error) {
+                        postError(activity, ui, "Não foi possível baixar a atualização.");
+                    }
+                }));
+    }
+
+    private static void postError(Activity activity, DownloadUi ui, String message) {
+        MAIN.post(() -> {
+            ui.close();
+            if (!activity.isFinishing()) {
+                Toast.makeText(activity, message, Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private static void launchInstaller(Activity activity, File apkFile) {
+        if (activity.isFinishing()) return;
         try {
             Uri apkUri = FileProvider.getUriForFile(
                     activity,
@@ -103,5 +149,89 @@ public final class AndroidAutoUpdater {
                     "https://github.com/" + REPOSITORY + "/releases/latest"));
             activity.startActivity(browser);
         }
+    }
+
+    private static final class DownloadUi {
+        private final AlertDialog dialog;
+        private final ProgressBar progressBar;
+        private final TextView status;
+        private final TextView detail;
+        private final AtomicBoolean cancelled = new AtomicBoolean(false);
+
+        private DownloadUi(Activity activity) {
+            LinearLayout content = new LinearLayout(activity);
+            content.setOrientation(LinearLayout.VERTICAL);
+            int padding = dp(activity, 22);
+            content.setPadding(padding, dp(activity, 8), padding, padding);
+
+            status = new TextView(activity);
+            detail = new TextView(activity);
+            progressBar = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
+            progressBar.setMax(100);
+            progressBar.setIndeterminate(true);
+
+            content.addView(status, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            content.addView(progressBar, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            content.addView(detail, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            dialog = new AlertDialog.Builder(activity)
+                    .setTitle("Baixando atualização")
+                    .setView(content)
+                    .setNegativeButton("Cancelar", null)
+                    .create();
+            dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                    .setOnClickListener(view -> {
+                        cancelled.set(true);
+                        view.setEnabled(false);
+                        status.setText("Cancelando…");
+                    }));
+            dialog.setOnDismissListener(ignored -> cancelled.set(true));
+            status.setText("Conectando…");
+            detail.setText("Aguarde");
+            dialog.show();
+        }
+
+        private void update(DownloadProgress progress) {
+            if (!dialog.isShowing()) return;
+            if (progress.isIndeterminate()) {
+                progressBar.setIndeterminate(true);
+                status.setText("Baixando…");
+                detail.setText(formatBytes(progress.downloadedBytes));
+            } else {
+                progressBar.setIndeterminate(false);
+                progressBar.setProgress(progress.percent());
+                status.setText(progress.percent() + "%");
+                long eta = progress.remainingSeconds();
+                String etaText = eta < 0 ? "calculando ETA" : "ETA " + formatDuration(eta);
+                detail.setText(formatBytes(progress.downloadedBytes) + " de "
+                        + formatBytes(progress.totalBytes) + " · "
+                        + formatBytes(progress.bytesPerSecond) + "/s · " + etaText);
+            }
+        }
+
+        private void close() {
+            if (dialog.isShowing()) dialog.dismiss();
+        }
+
+        private static int dp(Activity activity, int value) {
+            return (int) (value * activity.getResources().getDisplayMetrics().density + 0.5f);
+        }
+    }
+
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024L) return bytes + " B";
+        double value = bytes / 1024.0;
+        if (value < 1024.0) return String.format(Locale.ROOT, "%.1f KB", value);
+        value /= 1024.0;
+        if (value < 1024.0) return String.format(Locale.ROOT, "%.1f MB", value);
+        return String.format(Locale.ROOT, "%.1f GB", value / 1024.0);
+    }
+
+    private static String formatDuration(long seconds) {
+        if (seconds < 60L) return seconds + "s";
+        return (seconds / 60L) + "m " + (seconds % 60L) + "s";
     }
 }

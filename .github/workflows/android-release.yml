@@ -87,7 +87,7 @@ jobs:
       - name: Build libGDX Android and desktop apps
         working-directory: libgdx-touch
         run: |
-          ./gradlew :core:test :core:build :android:assembleRelease :android:bundleRelease :lwjgl3:distZip \
+          ./gradlew :release-updater:test :core:test :core:build :android:assembleRelease :android:bundleRelease :lwjgl3:distZip \
             -PversionCode="$VERSION_CODE" -PversionName="${VERSION_NAME#v}" \
             --no-daemon --stacktrace
 
@@ -103,8 +103,8 @@ jobs:
           if [ -f libgdx-touch/android/build/outputs/bundle/release/android-release.aab ]; then
             cp libgdx-touch/android/build/outputs/bundle/release/android-release.aab dist/release/game-ping-pong-touch-android.aab
           fi
-          DESKTOP_ZIP="$(find libgdx-touch/lwjgl3/build/distributions -maxdepth 1 -type f -name '*.zip' | head -n 1)"
-          test -n "$DESKTOP_ZIP"
+          DESKTOP_ZIP="libgdx-touch/lwjgl3/build/distributions/lwjgl3-${VERSION_NAME#v}.zip"
+          test -f "$DESKTOP_ZIP"
           cp "$DESKTOP_ZIP" dist/release/game-ping-pong-touch-desktop.zip
           sha256sum dist/release/game-ping-pong-touch-android.apk | awk '{print $1}' > dist/release/game-ping-pong-touch-android.apk.sha256
           sha256sum dist/release/game-ping-pong-touch-desktop.zip | awk '{print $1}' > dist/release/game-ping-pong-touch-desktop.zip.sha256

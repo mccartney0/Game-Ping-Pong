@@ -1,17 +1,33 @@
 package com.mccartney0.gamepingpong.update;
 
+import com.mccartney0.release.DownloadListener;
+import com.mccartney0.release.DownloadProgress;
 import com.mccartney0.release.GitHubReleaseUpdater;
 import com.mccartney0.release.ReleaseVersion;
 
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
+import java.awt.BorderLayout;
 import java.awt.Desktop;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridLayout;
+import java.awt.Window;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DesktopAutoUpdater {
     private static final String REPOSITORY = "mccartney0/Game-Ping-Pong";
@@ -32,7 +48,7 @@ public final class DesktopAutoUpdater {
                 GitHubReleaseUpdater.UpdateInfo update = GitHubReleaseUpdater.checkLatest(
                         REPOSITORY, version, ASSET_NAME);
                 if (update == null) return;
-                javax.swing.SwingUtilities.invokeLater(() -> {
+                SwingUtilities.invokeLater(() -> {
                     int choice = JOptionPane.showConfirmDialog(
                             null,
                             "A versão " + update.version + " de Game Ping Pong Touch está disponível.\nBaixar agora?",
@@ -48,35 +64,158 @@ public final class DesktopAutoUpdater {
     }
 
     private static void download(GitHubReleaseUpdater.UpdateInfo update) {
-        EXECUTOR.execute(() -> {
-            try {
-                byte[] content = GitHubReleaseUpdater.download(update.downloadUrl);
-                String expectedSha = update.checksumUrl == null
-                        ? null : GitHubReleaseUpdater.downloadText(update.checksumUrl).split("\\s+")[0];
-                if (!GitHubReleaseUpdater.sha256Matches(content, expectedSha)) {
-                    throw new IllegalStateException("Checksum SHA-256 inválido");
-                }
-                File directory = new File(System.getProperty("user.home"), ".game-ping-pong/updates");
-                if (!directory.exists() && !directory.mkdirs()) throw new IllegalStateException("Falha no cache");
-                File target = new File(directory, ASSET_NAME);
-                try (FileOutputStream output = new FileOutputStream(target)) {
-                    output.write(content);
-                }
-                File checksum = new File(directory, ASSET_NAME + ".sha256");
-                Files.write(checksum.toPath(), (expectedSha == null ? "" : expectedSha).getBytes(StandardCharsets.UTF_8));
-                javax.swing.SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(null,
-                            "Download concluído em:\n" + target.getAbsolutePath() +
-                                    "\nExtraia o pacote depois de fechar o jogo para aplicar a atualização.",
-                            "Atualização pronta", JOptionPane.INFORMATION_MESSAGE);
-                    try {
-                        if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(directory);
-                    } catch (Exception ignored) { }
-                });
-            } catch (Exception error) {
-                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                        null, "Não foi possível baixar a atualização.", "Atualizador", JOptionPane.WARNING_MESSAGE));
-            }
+        SwingUtilities.invokeLater(() -> {
+            DownloadDialog dialog = new DownloadDialog(null, "Atualizando Game Ping Pong Touch");
+            dialog.showDialog();
+            EXECUTOR.execute(() -> GitHubReleaseUpdater.downloadToFile(
+                    update.downloadUrl,
+                    new File(new File(System.getProperty("user.home"), ".game-ping-pong/updates"), ASSET_NAME),
+                    dialog.cancelled,
+                    new DownloadListener() {
+                        @Override
+                        public void onProgress(DownloadProgress progress) {
+                            SwingUtilities.invokeLater(() -> dialog.update(progress));
+                        }
+
+                        @Override
+                        public void onCompleted(File file) {
+                            try {
+                                String expectedSha = update.checksumUrl == null
+                                        ? null : GitHubReleaseUpdater.downloadText(update.checksumUrl).split("\\s+")[0];
+                                if (!GitHubReleaseUpdater.sha256Matches(file, expectedSha)) {
+                                    throw new IllegalStateException("Checksum SHA-256 inválido");
+                                }
+                                if (expectedSha != null) {
+                                    Files.write(new File(file.getPath() + ".sha256").toPath(),
+                                            expectedSha.getBytes(StandardCharsets.UTF_8));
+                                }
+                                SwingUtilities.invokeLater(() -> {
+                                    dialog.close();
+                                    JOptionPane.showMessageDialog(null,
+                                            "Download concluído em:\n" + file.getAbsolutePath()
+                                                    + "\nExtraia o pacote depois de fechar o jogo.",
+                                            "Atualização pronta", JOptionPane.INFORMATION_MESSAGE);
+                                    openFolder(file.getParentFile());
+                                });
+                            } catch (Exception error) {
+                                if (file.exists()) file.delete();
+                                SwingUtilities.invokeLater(() -> {
+                                    dialog.close();
+                                    JOptionPane.showMessageDialog(null,
+                                            "A validação da atualização falhou.",
+                                            "Atualizador", JOptionPane.WARNING_MESSAGE);
+                                });
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled() {
+                            SwingUtilities.invokeLater(() -> {
+                                dialog.close();
+                                JOptionPane.showMessageDialog(null, "Download cancelado.",
+                                        "Atualizador", JOptionPane.INFORMATION_MESSAGE);
+                            });
+                        }
+
+                        @Override
+                        public void onError(Exception error) {
+                            SwingUtilities.invokeLater(() -> {
+                                dialog.close();
+                                JOptionPane.showMessageDialog(null,
+                                        "Não foi possível baixar a atualização.",
+                                        "Atualizador", JOptionPane.WARNING_MESSAGE);
+                            });
+                        }
+                    }));
         });
+    }
+
+    private static void openFolder(File directory) {
+        try {
+            if (Desktop.isDesktopSupported() && directory != null) Desktop.getDesktop().open(directory);
+        } catch (Exception ignored) { }
+    }
+
+    private static final class DownloadDialog {
+        private final JDialog dialog;
+        private final JProgressBar progressBar = new JProgressBar(0, 100);
+        private final JLabel status = new JLabel("Conectando…");
+        private final JLabel detail = new JLabel("Aguarde");
+        private final JButton cancel = new JButton("Cancelar");
+        private final AtomicBoolean cancelled = new AtomicBoolean(false);
+
+        private DownloadDialog(Window owner, String title) {
+            dialog = new JDialog(owner, title, Dialog.ModalityType.MODELESS);
+            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+            progressBar.setIndeterminate(true);
+            progressBar.setStringPainted(true);
+            progressBar.setString("Conectando…");
+            cancel.addActionListener(event -> {
+                cancelled.set(true);
+                cancel.setEnabled(false);
+                status.setText("Cancelando…");
+            });
+            dialog.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent event) {
+                    cancelled.set(true);
+                    cancel.setEnabled(false);
+                    status.setText("Cancelando…");
+                }
+            });
+
+            javax.swing.JPanel center = new javax.swing.JPanel(new GridLayout(3, 1, 0, 8));
+            center.add(status);
+            center.add(progressBar);
+            center.add(detail);
+            javax.swing.JPanel buttons = new javax.swing.JPanel(new FlowLayout(FlowLayout.RIGHT));
+            buttons.add(cancel);
+            dialog.setLayout(new BorderLayout(16, 12));
+            dialog.add(center, BorderLayout.CENTER);
+            dialog.add(buttons, BorderLayout.SOUTH);
+            dialog.setMinimumSize(new Dimension(460, 150));
+            dialog.setSize(520, 190);
+            dialog.setLocationRelativeTo(null);
+        }
+
+        private void showDialog() {
+            dialog.setVisible(true);
+        }
+
+        private void update(DownloadProgress progress) {
+            if (!dialog.isDisplayable()) return;
+            if (progress.isIndeterminate()) {
+                progressBar.setIndeterminate(true);
+                progressBar.setString("Baixando…");
+                detail.setText(formatBytes(progress.downloadedBytes));
+            } else {
+                progressBar.setIndeterminate(false);
+                progressBar.setValue(progress.percent());
+                progressBar.setString(progress.percent() + "%");
+                long eta = progress.remainingSeconds();
+                detail.setText(formatBytes(progress.downloadedBytes) + " de "
+                        + formatBytes(progress.totalBytes) + " · "
+                        + formatBytes(progress.bytesPerSecond) + "/s · ETA "
+                        + (eta < 0 ? "calculando" : formatDuration(eta)));
+            }
+        }
+
+        private void close() {
+            if (dialog.isDisplayable()) dialog.dispose();
+        }
+    }
+
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024L) return bytes + " B";
+        double value = bytes / 1024.0;
+        if (value < 1024.0) return String.format(Locale.ROOT, "%.1f KB", value);
+        value /= 1024.0;
+        if (value < 1024.0) return String.format(Locale.ROOT, "%.1f MB", value);
+        return String.format(Locale.ROOT, "%.1f GB", value / 1024.0);
+    }
+
+    private static String formatDuration(long seconds) {
+        if (seconds < 60L) return seconds + "s";
+        return (seconds / 60L) + "m " + (seconds % 60L) + "s";
     }
 }
