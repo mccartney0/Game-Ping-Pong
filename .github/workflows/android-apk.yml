@@ -64,7 +64,7 @@ jobs:
           profile: pixel_2
           emulator-options: -no-window -noaudio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
           force-avd-creation: true
-          boot-timeout: 600
+          emulator-boot-timeout: 600
           disable-animations: true
           script: cd libgdx-touch && ./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace
 
