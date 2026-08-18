@@ -5,7 +5,11 @@
         android:allowBackup="true"
         android:label="Game Ping Pong Touch"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
-        android:resizeableActivity="true">
+        android:resizeableActivity="true"
+        android:hardwareAccelerated="true">
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="@string/admob_app_id" />
         <meta-data
             android:name="com.google.android.gms.games.APP_ID"
             android:value="@string/game_services_project_id" />

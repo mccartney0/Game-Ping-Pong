@@ -1,8 +1,26 @@
 # Game Ping Pong — camada libGDX de toque
 
-Esta pasta contém uma adaptação incremental do jogo AWT para libGDX. O projeto AWT original permanece intacto; o módulo adiciona um `core` libGDX com controle multitouch para as raquetes, launcher Android, launcher LWJGL3 e um playthrough automatizado.
+Esta pasta contém a adaptação mobile do jogo AWT para libGDX. O jogo AWT original permanece intacto em `src/pong/main`. A camada libGDX separa a lógica independente de plataforma (`core`) dos adapters Android (`android`) e do launcher desktop (`lwjgl3`).
 
-## Gestos
+> **Objetivo da arquitetura:** o `core` não importa `android.*`; desktop e testes usam fallbacks offline, enquanto o Android injeta Play Games Services e AdMob por contratos estáveis.
+
+## Estrutura
+
+```text
+libgdx-touch/
+├── core/
+│   ├── src/main/java/        mundo, render, gestos e contratos de serviços
+│   └── src/test/java/        JUnit: serviços, idempotência e estresse da física
+├── android/
+│   ├── src/main/java/        launcher, GameApplication e adapters Android
+│   └── src/androidTest/      testes Espresso/instrumentados do launcher
+├── lwjgl3/                   launcher desktop offline
+├── playthrough/              cenário headless de 900 frames
+├── gradlew                   Gradle Wrapper 8.2
+└── PGS_PLAY_CONSOLE_SETUP.md guia de configuração no Play Console
+```
+
+## Gestos e gameplay
 
 | Gesto | Resultado |
 |---|---|
@@ -15,59 +33,110 @@ Esta pasta contém uma adaptação incremental do jogo AWT para libGDX. O projet
 
 O reconhecimento usa `Viewport.unproject`, portanto o gesto é convertido para coordenadas lógicas da arena e não depende da resolução física do aparelho. O toque duplo só é aceito dentro de uma janela de `0.28s` e com deslocamento máximo de `0.65` unidade de mundo. Um toque que ultrapasse `0.18` unidade vira arraste e não é contado como toque duplo.
 
-## Estrutura
+`TouchPongWorld` mantém física determinística, placar, limite de partida, pausa, habilidades e efeitos da bola. O render usa `ShapeRenderer` e os efeitos visuais usam pools fixos de trilha e partículas para reduzir alocações por frame.
+
+## Serviços e fallbacks
+
+O módulo `core` define dois contratos sem dependências Android:
+
+| Contrato | Implementação Android | Fallback desktop/testes |
+|---|---|---|
+| `GameServices` | `AndroidGameServices`, com autenticação, leaderboards e achievements PGS v2 | `NoopGameServices` |
+| `MonetizationService` | `AndroidMonetizationService`, com banner adaptativo e rewarded ads | `NoopMonetizationService` |
+
+`AchievementProgress` coordena os marcos principais de forma idempotente. O primeiro ponto e a vitória da partida são enviados no máximo uma vez por instância de jogo, mesmo que o loop processe muitos frames após o marco.
+
+O rewarded ad só chama `onRewardEarned` quando o SDK informa efetivamente a recompensa. Quando o anúncio não está pronto, o fallback chama `onAdUnavailable`; no desktop não há banner nem anúncio real.
+
+## IDs, AdMob e Play Games
+
+O arquivo `android/src/main/res/values/strings.xml` não contém IDs de produção. Os recursos são gerados em `android/build.gradle` por `resValue`.
+
+Durante o desenvolvimento, o padrão usa os **IDs oficiais de teste do AdMob** e placeholders para PGS, leaderboards e achievements. Para uma build real, forneça os valores por propriedades Gradle ou variáveis de ambiente; nunca grave IDs de produção no código versionado.
+
+| Recurso | Propriedade Gradle | Variável de ambiente | Fallback versionado |
+|---|---|---|---|
+| Projeto PGS | `gameServicesProjectId` | `GAME_SERVICES_PROJECT_ID` | placeholder |
+| App ID AdMob | `admobAppId` | `ADMOB_APP_ID` | ID oficial de teste |
+| Banner AdMob | `bannerAdUnitId` | `BANNER_AD_UNIT_ID` | ID oficial de teste |
+| Rewarded AdMob | `rewardedAdUnitId` | `REWARDED_AD_UNIT_ID` | ID oficial de teste |
+| Achievement primeiro ponto | `achievementFirstPoint` | `ACHIEVEMENT_FIRST_POINT` | placeholder |
+| Achievement vitória | `achievementMatchWin` | `ACHIEVEMENT_MATCH_WIN` | placeholder |
+
+Os cinco leaderboards também aceitam propriedades e variáveis homônimas documentadas no `android/build.gradle`, por exemplo `LEADERBOARD_SURVIVAL_SCORE`. O procedimento completo para criar os recursos na Play Console está em [`PGS_PLAY_CONSOLE_SETUP.md`](PGS_PLAY_CONSOLE_SETUP.md).
+
+## Assinatura de APK/AAB
+
+Keystores, senhas e aliases nunca são versionados. O módulo aceita `android/signing.properties` local, que é ignorado pelo Git, ou estas variáveis no CI:
 
 ```text
-libgdx-touch/
-├── core/       lógica do mundo e entrada por toque
-├── android/    AndroidLauncher e configuração do APK
-├── lwjgl3/     teste desktop com mouse
-└── playthrough/TouchPlaythrough.java
+ANDROID_KEYSTORE_PATH
+ANDROID_KEYSTORE_PASSWORD
+ANDROID_KEY_ALIAS
+ANDROID_KEY_PASSWORD
 ```
 
-A classe `PaddleTouchInput` implementa `InputAdapter` e delega ações para `PaddleTouchTarget`. O mundo de exemplo, `TouchPongWorld`, contém as duas raquetes, bola, placar, habilidade e pausa. Na migração definitiva, substitua o corpo de `TouchPongWorld` pelo `GameWorld` extraído do projeto atual, mantendo o contrato `PaddleTouchTarget`.
+Exemplo local de `android/signing.properties` — **não commitar**:
 
-## Execução do Android
+```properties
+storeFile=/caminho/seguro/game-ping-pong-upload.jks
+storePassword=senha-local
+keyAlias=game-ping-pong
+keyPassword=senha-local
+```
 
-Abra `libgdx-touch` como projeto Gradle/Android Studio após configurar o Android SDK. Os comandos esperados são:
+Para gerar um AAB assinado localmente, com as propriedades acima configuradas:
 
 ```bash
+./gradlew :android:bundleRelease --no-daemon --stacktrace
+```
+
+Sem credenciais, `assembleRelease` continua compilável, mas não deve ser tratado como artefato pronto para publicação. No GitHub Actions, injete o keystore a partir de Secrets e defina os quatro valores de assinatura no ambiente do job; o workflow versionado gera apenas APK debug.
+
+## Execução local
+
+Requisitos: Java 8 compatível com os módulos libGDX, Android SDK API 35 para o módulo Android e Gradle Wrapper 8.2.
+
+```bash
+./gradlew :core:test
+./gradlew :core:build
 ./gradlew :lwjgl3:run
 ./gradlew :android:assembleDebug
 adb install -r android/build/outputs/apk/debug/android-debug.apk
 ```
 
-O Android está fixado em paisagem, com modo imersivo, sem acelerômetro e sem bússola. Para o APK, é necessário ter o Android SDK e o Gradle wrapper configurados; o sandbox desta tarefa validou o módulo core diretamente com o jar libGDX 1.14.2.
+O launcher Android usa paisagem, modo imersivo, aceleração de hardware, sem acelerômetro e sem bússola. A inicialização de `PlayGamesSdk` e `MobileAds` ocorre em `GameApplication`.
 
-## Playthrough validado
+## Playthrough e testes automatizados
 
-O roteiro `playthrough/TouchPlaythrough.java` simula 900 frames a 60 FPS, controla as duas raquetes com ponteiros independentes, dispara um toque duplo nas duas raquetes, gera pontos, pausa e retoma o mundo e verifica que a bola permanece numericamente válida.
+O playthrough `playthrough/TouchPlaythrough.java` simula 900 frames a 60 FPS, controla as duas raquetes com ponteiros independentes, dispara toque duplo nos dois lados, gera pontos, pausa e retoma o mundo e verifica que a bola permanece numericamente válida.
 
-Resultado atual:
+Os testes JUnit do core cobrem:
 
-```text
-touch playthrough: OK
-score=3:0
-abilityActivations=2
-pauseToggles=2
-drags=898/898
-```
+| Teste | Cobertura |
+|---|---|
+| `ServicesTest` | idempotência de unlock, IDs ausentes e fallback offline do rewarded |
+| `ServicesIntegrationTest` | envio único do score final e visibilidade do banner após a partida |
+| `TouchPongWorldStressTest` | simulação prolongada, limites de placar, efeitos e ausência de NaN/infinito |
+| `AndroidLauncherUiTest` | montagem da superfície Android e banner inicialmente oculto |
 
-Para reproduzir no sandbox depois de baixar `gdx-1.14.2.jar`:
+Para reproduzir o playthrough sem Android Studio, usando um jar local do libGDX:
 
 ```bash
-mkdir -p /tmp/libgdx-touch-build
-javac -cp /tmp/gdx-1.14.2.jar \
-  -d /tmp/libgdx-touch-build \
-  $(find core/src/main/java -name '*.java')
-javac -cp /tmp/gdx-1.14.2.jar:/tmp/libgdx-touch-build \
-  -d /tmp/libgdx-touch-build playthrough/TouchPlaythrough.java
+GDX_JAR=/tmp/libgdx-touch-libs/gdx-1.14.2.jar
+rm -rf /tmp/libgdx-complete-build
+mkdir -p /tmp/libgdx-complete-build
+javac -Xlint:all -cp "$GDX_JAR" \
+  -d /tmp/libgdx-complete-build \
+  $(find core/src/main/java -name '*.java' | sort)
+javac -Xlint:all -cp "$GDX_JAR:/tmp/libgdx-complete-build" \
+  -d /tmp/libgdx-complete-build playthrough/TouchPlaythrough.java
 java -Djava.awt.headless=true \
-  -cp /tmp/gdx-1.14.2.jar:/tmp/libgdx-touch-build \
+  -cp "$GDX_JAR:/tmp/libgdx-complete-build" \
   TouchPlaythrough
 ```
 
-O resultado detalhado fica em `playthrough.log`.
+O resultado detalhado fica em `playthrough.log`. O resultado validado nesta versão inclui `score=3:0`, duas ativações de habilidade, duas transições de pausa, trilha ativa e partículas emitidas.
 
 ## Efeitos visuais da bola
 
@@ -81,20 +150,20 @@ world.setEffectsQuality(BallEffects.Quality.MEDIUM);
 world.setEffectsQuality(BallEffects.Quality.HIGH);
 ```
 
-`LOW`, `MEDIUM` e `HIGH` controlam a quantidade máxima de pontos de trilha e partículas. Para economizar bateria em aparelhos antigos, use `LOW`, desligue os efeitos em menus/pausa e mantenha o `ShapeRenderer` fora de loops de criação de objetos.
+`LOW`, `MEDIUM` e `HIGH` controlam a quantidade máxima de pontos de trilha e partículas. Para economizar bateria em aparelhos antigos, use `LOW`, desligue efeitos em menus/pausa e mantenha o `ShapeRenderer` fora de loops de criação de objetos.
 
 ## GitHub Actions
 
-O arquivo `.github/workflows/android-apk.yml` executa quando há alterações em `libgdx-touch/` ou manualmente por `workflow_dispatch`. O job instala Java 17, Android SDK/API 35, Gradle 8.2, executa:
+O arquivo [`.github/workflows/android-apk.yml`](../.github/workflows/android-apk.yml) executa em alterações do módulo ou manualmente por `workflow_dispatch`. O job usa Java 17 no runner, Android SDK/API 35 e Gradle 8.2; a compatibilidade de bytecode dos módulos permanece Java 8.
+
+A sequência do pipeline é:
 
 ```bash
-gradle :core:build :android:assembleDebug --no-daemon --stacktrace
+./gradlew :core:test :core:build --no-daemon --stacktrace
+./gradlew :android:assembleDebug --no-daemon --stacktrace
+./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace
 ```
 
-Depois, publica `android/build/outputs/apk/debug/android-debug.apk` como artefato por 14 dias. Esse pipeline gera um APK debug não assinado para testes. Para release, adicione um keystore armazenado em GitHub Secrets, configure `signingConfigs` no módulo Android e troque a tarefa para `assembleRelease`.
+A etapa instrumentada usa um emulador API 35 com Google APIs. O APK debug é publicado como artefato por 14 dias. Falhas preservam relatórios Gradle e resultados de testes quando existirem.
 
-## Google Play Games Services
-
-O módulo Android inclui `AndroidGameServices` com PGS v2 para autenticação, envio de score no fim da partida e abertura da UI oficial de leaderboards. O `core` usa `GameServices` e `NoopGameServices`, portanto o launcher desktop continua offline.
-
-Antes de executar no Android, substitua o project ID e os IDs reais dos leaderboards em `android/src/main/res/values/strings.xml`. O passo a passo da Play Console, configuração de testadores e primeiro AAB está em [`PGS_PLAY_CONSOLE_SETUP.md`](PGS_PLAY_CONSOLE_SETUP.md).
+O workflow de debug não injeta IDs de produção nem credenciais de assinatura. O workflow separado [`.github/workflows/android-release.yml`](../.github/workflows/android-release.yml), acionado manualmente ou por tag `v*.*.*`, restaura a upload key apenas no runner, exige todos os IDs e Secrets de produção e executa `bundleRelease`; se qualquer valor obrigatório estiver ausente, o job falha antes de gerar o AAB.

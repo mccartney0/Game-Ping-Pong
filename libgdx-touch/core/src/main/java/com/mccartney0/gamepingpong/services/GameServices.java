@@ -11,4 +11,11 @@ public interface GameServices {
     void showLeaderboard(String leaderboardId);
 
     void showAllLeaderboards();
+
+    void unlockAchievement(String achievementId, GameServicesCallback callback);
+
+    void incrementAchievement(String achievementId, int steps,
+            GameServicesCallback callback);
+
+    void showAchievements();
 }

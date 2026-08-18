@@ -9,18 +9,30 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.mccartney0.gamepingpong.input.PaddleTouchInput;
 import com.mccartney0.gamepingpong.services.GameServices;
+import com.mccartney0.gamepingpong.services.AchievementProgress;
 import com.mccartney0.gamepingpong.services.GameServicesCallback;
+import com.mccartney0.gamepingpong.services.MonetizationService;
 import com.mccartney0.gamepingpong.services.NoopGameServices;
+import com.mccartney0.gamepingpong.services.NoopMonetizationService;
+import com.mccartney0.gamepingpong.services.RewardCallback;
 public class PingPongTouchGame extends ApplicationAdapter {
     private final TouchPongWorld world;
     private final GameServices gameServices;
+    private final MonetizationService monetizationService;
 
     public PingPongTouchGame() {
-        this(new NoopGameServices());
+        this(new NoopGameServices(), new NoopMonetizationService());
     }
 
     public PingPongTouchGame(GameServices gameServices) {
+        this(gameServices, new NoopMonetizationService());
+    }
+
+    public PingPongTouchGame(GameServices gameServices,
+            MonetizationService monetizationService) {
         this.gameServices = gameServices == null ? new NoopGameServices() : gameServices;
+        this.monetizationService = monetizationService == null
+                ? new NoopMonetizationService() : monetizationService;
         this.world = new TouchPongWorld();
     }
     private OrthographicCamera camera;
@@ -29,6 +41,9 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private PaddleTouchInput touchInput;
     private String currentLeaderboardId;
     private boolean finalScoreSubmissionRequested;
+    private final AchievementProgress achievementProgress = new AchievementProgress();
+    private String firstPointAchievementId;
+    private String matchWinAchievementId;
 
     @Override
     public void create() {
@@ -39,6 +54,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
         camera.update();
         renderer = new ShapeRenderer();
         touchInput = new PaddleTouchInput(viewport, world);
+        monetizationService.setBannerVisible(false);
         Gdx.input.setInputProcessor(touchInput);
         Gdx.input.setCatchKey(Input.Keys.BACK, true);
     }
@@ -48,6 +64,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
         float delta = Math.min(Gdx.graphics.getDeltaTime(), 1f / 20f);
         touchInput.update(delta);
         world.update(delta);
+        processAchievements();
         submitCurrentMatchScoreIfFinished();
 
         Gdx.gl.glClearColor(0.005f, 0.01f, 0.03f, 1f);
@@ -96,6 +113,22 @@ public class PingPongTouchGame extends ApplicationAdapter {
         return gameServices;
     }
 
+    public MonetizationService getMonetizationService() {
+        return monetizationService;
+    }
+
+    public boolean isRewardedReady() {
+        return monetizationService.isRewardedReady();
+    }
+
+    public void showRewarded(String placement, RewardCallback callback) {
+        monetizationService.showRewarded(placement, callback);
+    }
+
+    public void setBannerVisible(boolean visible) {
+        monetizationService.setBannerVisible(visible);
+    }
+
     public void signIn(GameServicesCallback callback) {
         gameServices.signIn(callback);
     }
@@ -112,9 +145,33 @@ public class PingPongTouchGame extends ApplicationAdapter {
         gameServices.showAllLeaderboards();
     }
 
+    public void showAchievements() {
+        gameServices.showAchievements();
+    }
+
+    public void setAchievementIds(String firstPointAchievementId,
+            String matchWinAchievementId) {
+        this.firstPointAchievementId = firstPointAchievementId;
+        this.matchWinAchievementId = matchWinAchievementId;
+    }
+
+    public AchievementProgress getAchievementProgress() {
+        return achievementProgress;
+    }
+
     public void setCurrentLeaderboardId(String leaderboardId) {
         this.currentLeaderboardId = leaderboardId;
         this.finalScoreSubmissionRequested = false;
+        monetizationService.setBannerVisible(false);
+    }
+
+    private void processAchievements() {
+        if (world.playerScore > 0) {
+            achievementProgress.onPlayerPoint(gameServices, firstPointAchievementId);
+        }
+        if (world.playerScore >= TouchPongWorld.MATCH_SCORE) {
+            achievementProgress.onMatchWin(gameServices, matchWinAchievementId);
+        }
     }
 
     public void submitCurrentMatchScoreIfFinished() {
@@ -123,6 +180,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
             return;
         }
         finalScoreSubmissionRequested = true;
+        monetizationService.setBannerVisible(true);
         gameServices.submitScore(currentLeaderboardId, world.getLeaderboardScore(),
                 new GameServicesCallback() {
                     @Override

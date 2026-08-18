@@ -2,6 +2,7 @@ package com.mccartney0.gamepingpong;
 
 import android.app.Activity;
 import com.badlogic.gdx.utils.Logger;
+import com.google.android.gms.games.AchievementsClient;
 import com.google.android.gms.games.GamesSignInClient;
 import com.google.android.gms.games.LeaderboardsClient;
 import com.google.android.gms.games.PlayGames;
@@ -11,6 +12,7 @@ import com.mccartney0.gamepingpong.services.GameServicesCallback;
 public final class AndroidGameServices implements GameServices {
 
     private static final int LEADERBOARD_UI_REQUEST = 9004;
+    private static final int ACHIEVEMENT_UI_REQUEST = 9003;
     private static final String TAG = "GamePingPongPGS";
 
     private final Activity activity;
@@ -113,6 +115,52 @@ public final class AndroidGameServices implements GameServices {
                     .addOnFailureListener(error -> logger.error(
                             "Falha ao abrir lista de leaderboards", error));
         });
+    }
+
+    @Override
+    public void unlockAchievement(String achievementId,
+            GameServicesCallback callback) {
+        if (!signedIn || !validAchievementId(achievementId)) {
+            notifyFailure(callback, "Achievement indisponivel sem autenticacao");
+            return;
+        }
+        AchievementsClient achievements = PlayGames.getAchievementsClient(activity);
+        achievements.unlock(achievementId)
+                .addOnSuccessListener(unused ->
+                        notifySuccess(callback, "Achievement desbloqueado"))
+                .addOnFailureListener(error -> notifyFailure(callback,
+                        "Falha ao desbloquear achievement: " + safeMessage(error)));
+    }
+
+    @Override
+    public void incrementAchievement(String achievementId, int steps,
+            GameServicesCallback callback) {
+        if (!signedIn || !validAchievementId(achievementId) || steps <= 0) {
+            notifyFailure(callback, "Incremento de achievement invalido");
+            return;
+        }
+        AchievementsClient achievements = PlayGames.getAchievementsClient(activity);
+        achievements.increment(achievementId, steps)
+                .addOnSuccessListener(unused ->
+                        notifySuccess(callback, "Achievement incrementado"))
+                .addOnFailureListener(error -> notifyFailure(callback,
+                        "Falha ao incrementar achievement: " + safeMessage(error)));
+    }
+
+    @Override
+    public void showAchievements() {
+        ensureSignedIn(() -> {
+            AchievementsClient achievements = PlayGames.getAchievementsClient(activity);
+            achievements.getAchievementsIntent()
+                    .addOnSuccessListener(intent -> activity.startActivityForResult(
+                            intent, ACHIEVEMENT_UI_REQUEST))
+                    .addOnFailureListener(error -> logger.error(
+                            "Falha ao abrir achievements", error));
+        });
+    }
+
+    private boolean validAchievementId(String achievementId) {
+        return achievementId != null && !achievementId.trim().isEmpty();
     }
 
     private void ensureSignedIn(Runnable action) {

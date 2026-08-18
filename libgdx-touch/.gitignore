@@ -1,3 +1,7 @@
 .gradle/
 **/build/
 android/src/main/jniLibs/
+android/signing.properties
+*.jks
+*.keystore
+*.p12

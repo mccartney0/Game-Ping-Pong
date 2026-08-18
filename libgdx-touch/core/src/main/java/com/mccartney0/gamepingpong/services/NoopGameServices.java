@@ -27,6 +27,23 @@ public final class NoopGameServices implements GameServices {
         // Sem UI de plataforma no desktop.
     }
 
+    @Override
+    public void unlockAchievement(String achievementId,
+            GameServicesCallback callback) {
+        notifyFailure(callback, "Achievements indisponiveis nesta plataforma");
+    }
+
+    @Override
+    public void incrementAchievement(String achievementId, int steps,
+            GameServicesCallback callback) {
+        notifyFailure(callback, "Achievements indisponiveis nesta plataforma");
+    }
+
+    @Override
+    public void showAchievements() {
+        // Sem UI de plataforma no desktop.
+    }
+
     private void notifyFailure(GameServicesCallback callback, String message) {
         if (callback != null) {
             callback.onFailure(message);

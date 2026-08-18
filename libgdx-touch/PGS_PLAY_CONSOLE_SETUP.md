@@ -9,11 +9,11 @@ Este documento explica como completar a configuração que o código libGDX/Andr
 | `core/.../services/GameServices.java` | Contrato de autenticação, envio de score e abertura de leaderboards. |
 | `core/.../services/NoopGameServices.java` | Fallback offline para desktop e testes. |
 | `core/.../services/LeaderboardIds.java` | IDs lógicos centralizados. |
-| `android/.../GameApplication.java` | Chama `PlayGamesSdk.initialize(this)` no ciclo de vida da aplicação. |
+| `android/.../GameApplication.java` | Chama `PlayGamesSdk.initialize(this)` e `MobileAds.initialize(this, ...)` no ciclo de vida da aplicação. |
 | `android/.../AndroidGameServices.java` | Verifica autenticação, chama `signIn()`, envia score e abre UI oficial. |
 | `android/.../AndroidLauncher.java` | Injeta o adapter PGS no jogo e seleciona o leaderboard padrão. |
 | `android/src/main/AndroidManifest.xml` | Declara `com.google.android.gms.games.APP_ID`. |
-| `android/src/main/res/values/strings.xml` | Recebe o project ID e os IDs gerados na Play Console. |
+| `android/build.gradle` | Gera os recursos de IDs a partir de propriedades Gradle/variáveis de ambiente, com placeholders e IDs de teste como padrão seguro. |
 
 O SDK v2 tenta autenticar automaticamente quando o jogo inicia. O código verifica `GamesSignInClient.isAuthenticated()` e só chama `signIn()` quando uma operação precisa de autenticação. Essa é a abordagem indicada para uma integração nova v2 [1].
 
@@ -50,27 +50,26 @@ No GitHub, configure um Environment chamado `production` e adicione estes Secret
 | `ANDROID_KEY_ALIAS` | Alias usado no `keytool`. |
 | `ANDROID_KEY_PASSWORD` | Senha da chave. |
 
-A chave privada não deve entrar no Git. O workflow de release deve restaurar a keystore em `${{ runner.temp }}`, executar `bundleRelease` e apagar o runner ao terminar. A Play App Signing separa a chave de distribuição da upload key e permite redefinir uma upload key perdida sem trocar a identidade de distribuição [3].
+A chave privada não deve entrar no Git. Um workflow de release deve restaurar a keystore em `${{ runner.temp }}`, executar `bundleRelease` e apagar o runner ao terminar. O workflow versionado neste repositório gera APK debug e executa testes; ele não recebe credenciais de produção. A Play App Signing separa a chave de distribuição da upload key e permite redefinir uma upload key perdida sem trocar a identidade de distribuição [3].
 
 ## 4. Configurar o jogo dentro de Play Games Services
 
 No app criado, abra **Grow users > Play Games Services > Setup and management > Configuration**. Se a seção ainda não existir, inicie a configuração do jogo.
 
-Preencha o nome e os dados básicos do jogo e obtenha o **Games services project ID** exibido na área de configuração. Depois, edite:
+Preencha o nome e os dados básicos do jogo e obtenha o **Games services project ID** exibido na área de configuração. Depois, forneça o número real do projeto, sem espaços ou aspas extras, por propriedade Gradle ou variável de ambiente. O manifesto já aponta para o recurso gerado:
 
-```text
-libgdx-touch/android/src/main/res/values/strings.xml
+```bash
+GAME_SERVICES_PROJECT_ID=123456789012 ./gradlew :android:assembleDebug
 ```
 
-Substitua:
+Para builds de release, prefira Secrets/variáveis do ambiente do CI. O recurso é gerado por `android/build.gradle` e não deve ser editado diretamente em `strings.xml`:
 
-```xml
-<string name="game_services_project_id" translatable="false">
-    REPLACE_WITH_PLAY_GAMES_PROJECT_ID
-</string>
+```groovy
+resValue 'string', 'game_services_project_id', resourceValue(
+        'gameServicesProjectId', 'GAME_SERVICES_PROJECT_ID', 'REPLACE_WITH_PLAY_GAMES_PROJECT_ID')
 ```
 
-pelo número real do projeto, sem espaços ou aspas extras. O manifesto já aponta para esse recurso:
+O manifesto aponta para esse recurso:
 
 ```xml
 <meta-data
@@ -104,12 +103,11 @@ Na configuração do jogo, abra **Grow users > Play Games Services > Setup and m
 | Campanha — Menor tempo | Time, menor é melhor | `leaderboard_speed_run_ms` gerado pela Play Console. |
 | Melhor combo | Numeric, maior é melhor | `leaderboard_best_combo` gerado pela Play Console. |
 
-Os valores acima são nomes/aliases de organização. A Play Console gera IDs reais que normalmente possuem um identificador próprio. Copie os IDs gerados e substitua os valores correspondentes em `strings.xml`:
+Os valores acima são nomes/aliases de organização. A Play Console gera IDs reais que normalmente possuem um identificador próprio. Copie os IDs gerados e forneça-os por propriedades Gradle ou variáveis de ambiente, sem gravá-los no código versionado:
 
-```xml
-<string name="leaderboard_survival_score" translatable="false">
-    ID_REAL_GERADO_NA_PLAY_CONSOLE
-</string>
+```bash
+LEADERBOARD_SURVIVAL_SCORE=ID_REAL_GERADO_NA_PLAY_CONSOLE \
+./gradlew :android:assembleDebug
 ```
 
 O código atual seleciona `leaderboard_survival_score` como placar padrão no `AndroidLauncher`. Para cada modo, selecione o ID apropriado antes de iniciar a partida. Envie o score somente no fim da partida e não a cada frame, evitando chamadas excessivas [5].
@@ -149,7 +147,7 @@ Durante o teste, use uma conta que esteja logada no aparelho e que tenha acesso 
 
 Antes do primeiro upload:
 
-1. Substitua o project ID e todos os leaderboard IDs em `strings.xml`.
+1. Injete o project ID, os IDs de leaderboards, achievements e AdMob por Secrets/variáveis do ambiente ou propriedades locais ignoradas pelo Git.
 2. Verifique o `applicationId` e o certificado SHA-1 no Play Console.
 3. Gere um `versionCode` maior que qualquer versão já enviada.
 4. Execute o workflow de release por uma tag, por exemplo `v0.1.0`.

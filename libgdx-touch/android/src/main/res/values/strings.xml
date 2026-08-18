@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Substitua pelo Game services project ID exibido na Play Console. -->
-    <string name="game_services_project_id" translatable="false">REPLACE_WITH_PLAY_GAMES_PROJECT_ID</string>
-
-    <!-- Substitua pelos IDs reais criados na Play Console. -->
-    <string name="leaderboard_mutant_arena_score" translatable="false">leaderboard_mutant_arena_score</string>
-    <string name="leaderboard_campaign_bosses" translatable="false">leaderboard_campaign_bosses</string>
-    <string name="leaderboard_survival_score" translatable="false">leaderboard_survival_score</string>
-    <string name="leaderboard_speed_run_ms" translatable="false">leaderboard_speed_run_ms</string>
-    <string name="leaderboard_best_combo" translatable="false">leaderboard_best_combo</string>
+    <!--
+        IDs são gerados por android/build.gradle.
+        O padrão versionado usa placeholders e IDs oficiais de teste do AdMob.
+        Para release, forneça propriedades Gradle ou variáveis de ambiente.
+    -->
 </resources>

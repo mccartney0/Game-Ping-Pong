@@ -20,7 +20,7 @@ jobs:
   build-apk:
     name: Compile libGDX Android debug APK
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     defaults:
       run:
@@ -49,8 +49,22 @@ jobs:
         with:
           gradle-version: '8.2'
 
-      - name: Compile core and Android debug APK
-        run: gradle :core:build :android:assembleDebug --no-daemon --stacktrace
+      - name: Run core unit and stress tests
+        run: ./gradlew :core:test :core:build --no-daemon --stacktrace
+
+      - name: Compile Android debug APK
+        run: ./gradlew :android:assembleDebug --no-daemon --stacktrace
+
+      - name: Run Android UI instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          force-avd-creation: true
+          disable-animations: true
+          script: cd libgdx-touch && ./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

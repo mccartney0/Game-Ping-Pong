@@ -2,6 +2,26 @@ plugins {
     id 'com.android.application'
 }
 
+// Release signing stays outside Git: use signing.properties locally or CI env vars.
+def signingProperties = new Properties()
+def signingFile = rootProject.file('signing.properties')
+if (signingFile.exists()) {
+    signingFile.withInputStream { signingProperties.load(it) }
+}
+def signingValue = { String key ->
+    signingProperties.getProperty(key) ?: System.getenv(key)
+}
+def releaseStoreFile = signingValue('storeFile') ?: signingValue('ANDROID_KEYSTORE_PATH')
+def releaseStorePassword = signingValue('storePassword') ?: signingValue('ANDROID_KEYSTORE_PASSWORD')
+def releaseKeyAlias = signingValue('keyAlias') ?: signingValue('ANDROID_KEY_ALIAS')
+def releaseKeyPassword = signingValue('keyPassword') ?: signingValue('ANDROID_KEY_PASSWORD')
+def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+def resourceValue = { String propertyName, String environmentName, String fallback ->
+    project.findProperty(propertyName) ?: System.getenv(environmentName) ?: fallback
+}
+def buildVersionCode = (project.findProperty('versionCode') ?: System.getenv('VERSION_CODE') ?: '1').toInteger()
+def buildVersionName = project.findProperty('versionName') ?: System.getenv('VERSION_NAME') ?: '1.0.0'
+
 configurations {
     natives
 }
@@ -14,13 +34,62 @@ android {
         applicationId 'com.mccartney0.gamepingpong'
         minSdk 23
         targetSdk 35
-        versionCode 1
-        versionName '1.0.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        versionCode buildVersionCode
+        versionName buildVersionName
+
+        // Safe development defaults. Production values belong in CI/local properties.
+        resValue 'string', 'game_services_project_id', resourceValue(
+                'gameServicesProjectId', 'GAME_SERVICES_PROJECT_ID', 'REPLACE_WITH_PLAY_GAMES_PROJECT_ID')
+        resValue 'string', 'leaderboard_mutant_arena_score', resourceValue(
+                'leaderboardMutantArenaScore', 'LEADERBOARD_MUTANT_ARENA_SCORE', 'leaderboard_mutant_arena_score')
+        resValue 'string', 'leaderboard_campaign_bosses', resourceValue(
+                'leaderboardCampaignBosses', 'LEADERBOARD_CAMPAIGN_BOSSES', 'leaderboard_campaign_bosses')
+        resValue 'string', 'leaderboard_survival_score', resourceValue(
+                'leaderboardSurvivalScore', 'LEADERBOARD_SURVIVAL_SCORE', 'leaderboard_survival_score')
+        resValue 'string', 'leaderboard_speed_run_ms', resourceValue(
+                'leaderboardSpeedRunMs', 'LEADERBOARD_SPEED_RUN_MS', 'leaderboard_speed_run_ms')
+        resValue 'string', 'leaderboard_best_combo', resourceValue(
+                'leaderboardBestCombo', 'LEADERBOARD_BEST_COMBO', 'leaderboard_best_combo')
+        resValue 'string', 'admob_app_id', resourceValue(
+                'admobAppId', 'ADMOB_APP_ID', 'ca-app-pub-3940256099942544~3347511713')
+        resValue 'string', 'banner_ad_unit_id', resourceValue(
+                'bannerAdUnitId', 'BANNER_AD_UNIT_ID', 'ca-app-pub-3940256099942544/9214589741')
+        resValue 'string', 'rewarded_ad_unit_id', resourceValue(
+                'rewardedAdUnitId', 'REWARDED_AD_UNIT_ID', 'ca-app-pub-3940256099942544/5224354917')
+        resValue 'string', 'achievement_first_point', resourceValue(
+                'achievementFirstPoint', 'ACHIEVEMENT_FIRST_POINT', 'achievement_first_point')
+        resValue 'string', 'achievement_match_win', resourceValue(
+                'achievementMatchWin', 'ACHIEVEMENT_MATCH_WIN', 'achievement_match_win')
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    testOptions {
+        animationsDisabled true
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+        }
     }
 
     sourceSets {
@@ -35,6 +104,12 @@ dependencies {
     implementation project(':core')
     implementation "com.badlogicgames.gdx:gdx-backend-android:${gdxVersion}"
     implementation "com.google.android.gms:play-services-games-v2:21.0.0"
+    implementation "com.google.android.gms:play-services-ads:24.8.0"
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
     natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-arm64-v8a"
     natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-armeabi-v7a"
     natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-x86"

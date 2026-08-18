@@ -2,6 +2,7 @@ package com.mccartney0.gamepingpong;
 
 import android.app.Application;
 
+import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.games.PlayGamesSdk;
 
 public final class GameApplication extends Application {
@@ -10,5 +11,6 @@ public final class GameApplication extends Application {
     public void onCreate() {
         super.onCreate();
         PlayGamesSdk.initialize(this);
+        MobileAds.initialize(this, initializationStatus -> { });
     }
 }
