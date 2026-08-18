@@ -1,0 +1,11 @@
+t=0.00 score=0:0 ball=(8.10,6.07) event=READY
+t=0.33 double-tap bottom ability=1
+t=0.67 double-tap top ability=2
+t=2.00 score=0:0 ball=(15.16,4.59) event=WALL HIT
+t=4.00 score=1:0 ball=(8.07,6.06) event=PLAYER POINT
+t=6.00 score=2:0 ball=(8.65,6.53) event=PLAYER POINT
+t=8.00 score=2:0 ball=(13.90,6.20) event=TOP HIT
+t=10.00 score=2:0 ball=(14.13,7.59) event=PLAYER HIT
+t=12.00 score=3:0 ball=(12.87,9.97) event=PLAYER POINT
+t=14.00 score=3:0 ball=(14.09,1.78) event=PLAYER HIT
+final score=3:0 drags=898/898 doubleTapAbilities=2 pauseToggles=2 event=RESUMED

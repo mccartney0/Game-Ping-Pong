@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.application'
+}
+
+configurations {
+    natives
+}
+
+android {
+    namespace 'com.mccartney0.gamepingpong'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.mccartney0.gamepingpong'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs = [rootProject.file('../assets')]
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-android:${gdxVersion}"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-arm64-v8a"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-armeabi-v7a"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-x86"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-x86_64"
+}
+
+tasks.register('copyAndroidNatives') {
+    doFirst {
+        file('src/main/jniLibs').mkdirs()
+    }
+    doLast {
+        configurations.natives.files.each { archive ->
+            copy {
+                from zipTree(archive)
+                into file('src/main/jniLibs')
+                include '**/*.so'
+            }
+        }
+    }
+}
+
+tasks.named('preBuild').configure {
+    dependsOn('copyAndroidNatives')
+}

@@ -1,0 +1,15 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api "com.badlogicgames.gdx:gdx:${gdxVersion}"
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs = [rootProject.file('../assets')]
+        }
+    }
+}
