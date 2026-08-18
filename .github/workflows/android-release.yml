@@ -1,15 +1,26 @@
-name: Build Android release AAB
+name: Build and publish all apps
 
 on:
   workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Versão sem o prefixo v, por exemplo 1.2.0"
+        required: true
+        default: "1.0.0"
+      version_code:
+        description: "Código numérico da versão Android"
+        required: true
+        default: "1"
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
-  contents: read
+  contents: write
 
 env:
+  VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.version_name }}
+  VERSION_CODE: ${{ inputs.version_code || github.run_number }}
   ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
   ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
   ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -24,19 +35,12 @@ env:
   ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
   BANNER_AD_UNIT_ID: ${{ secrets.BANNER_AD_UNIT_ID }}
   REWARDED_AD_UNIT_ID: ${{ secrets.REWARDED_AD_UNIT_ID }}
-  VERSION_CODE: ${{ vars.ANDROID_VERSION_CODE || github.run_number }}
-  VERSION_NAME: ${{ vars.ANDROID_VERSION_NAME || '1.0.0' }}
 
 jobs:
-  release-aab:
-    name: Compile signed Android release AAB
+  build-and-release:
+    name: Build and publish all release assets
     runs-on: ubuntu-latest
-    timeout-minutes: 35
-
-    defaults:
-      run:
-        working-directory: libgdx-touch
-
+    timeout-minutes: 40
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +49,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
           cache: gradle
 
       - name: Set up Android SDK
@@ -53,21 +57,21 @@ jobs:
 
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-        working-directory: .
 
-      - name: Validate release configuration
+      - name: Build original Java/AWT app
         run: |
+          chmod +x .github/scripts/build-awt.sh
+          VERSION_NAME="$VERSION_NAME" .github/scripts/build-awt.sh
+
+      - name: Validate release signing and production configuration
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
           test -n "$ANDROID_KEYSTORE_PASSWORD"
           test -n "$ANDROID_KEY_ALIAS"
           test -n "$ANDROID_KEY_PASSWORD"
           test -n "$GAME_SERVICES_PROJECT_ID"
-          test -n "$LEADERBOARD_MUTANT_ARENA_SCORE"
-          test -n "$LEADERBOARD_CAMPAIGN_BOSSES"
-          test -n "$LEADERBOARD_SURVIVAL_SCORE"
-          test -n "$LEADERBOARD_SPEED_RUN_MS"
-          test -n "$LEADERBOARD_BEST_COMBO"
-          test -n "$ACHIEVEMENT_FIRST_POINT"
-          test -n "$ACHIEVEMENT_MATCH_WIN"
           test -n "$ADMOB_APP_ID"
           test -n "$BANNER_AD_UNIT_ID"
           test -n "$REWARDED_AD_UNIT_ID"
@@ -76,32 +80,65 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          test -n "$ANDROID_KEYSTORE_BASE64"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/game-ping-pong-upload.jks"
           chmod 600 "$RUNNER_TEMP/game-ping-pong-upload.jks"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/game-ping-pong-upload.jks" >> "$GITHUB_ENV"
 
-      - name: Run core tests
-        run: ./gradlew :core:test --no-daemon --stacktrace
+      - name: Build libGDX Android and desktop apps
+        working-directory: libgdx-touch
+        run: |
+          ./gradlew :core:test :core:build :android:assembleRelease :android:bundleRelease :lwjgl3:distZip \
+            -PversionCode="$VERSION_CODE" -PversionName="${VERSION_NAME#v}" \
+            --no-daemon --stacktrace
 
-      - name: Build signed release AAB
-        run: ./gradlew :android:bundleRelease --no-daemon --stacktrace
+      - name: Normalize release assets and checksums
+        run: |
+          set -euo pipefail
+          mkdir -p dist/release
+          cp dist/neon-ping-pong-awt.jar dist/release/neon-ping-pong-awt.jar
+          cp dist/neon-ping-pong-awt.jar.sha256 dist/release/neon-ping-pong-awt.jar.sha256
+          APK_PATH="$(find libgdx-touch/android/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          test -n "$APK_PATH"
+          cp "$APK_PATH" dist/release/game-ping-pong-touch-android.apk
+          if [ -f libgdx-touch/android/build/outputs/bundle/release/android-release.aab ]; then
+            cp libgdx-touch/android/build/outputs/bundle/release/android-release.aab dist/release/game-ping-pong-touch-android.aab
+          fi
+          DESKTOP_ZIP="$(find libgdx-touch/lwjgl3/build/distributions -maxdepth 1 -type f -name '*.zip' | head -n 1)"
+          test -n "$DESKTOP_ZIP"
+          cp "$DESKTOP_ZIP" dist/release/game-ping-pong-touch-desktop.zip
+          sha256sum dist/release/game-ping-pong-touch-android.apk | awk '{print $1}' > dist/release/game-ping-pong-touch-android.apk.sha256
+          sha256sum dist/release/game-ping-pong-touch-desktop.zip | awk '{print $1}' > dist/release/game-ping-pong-touch-desktop.zip.sha256
+          cat > dist/release/release-manifest.json <<JSON
+          {
+            "version": "${VERSION_NAME#v}",
+            "tag": "v${VERSION_NAME#v}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "assets": {
+              "awt": "neon-ping-pong-awt.jar",
+              "android": "game-ping-pong-touch-android.apk",
+              "desktop": "game-ping-pong-touch-desktop.zip"
+            }
+          }
+          JSON
 
-      - name: Upload release AAB
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: game-ping-pong-release-aab
-          path: libgdx-touch/android/build/outputs/bundle/release/android-release.aab
+          name: game-ping-pong-release-${{ env.VERSION_NAME }}
+          path: dist/release/*
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
-      - name: Upload release reports on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: game-ping-pong-release-reports
-          path: |
-            libgdx-touch/**/build/reports/**
-            libgdx-touch/**/build/test-results/**
-          if-no-files-found: ignore
-          retention-days: 7
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v${VERSION_NAME#v}"
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" dist/release/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG_NAME" dist/release/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Game Ping Pong $TAG_NAME" \
+              --generate-notes
+          fi

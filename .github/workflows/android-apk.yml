@@ -5,11 +5,15 @@ on:
     branches: [ master ]
     paths:
       - 'libgdx-touch/**'
+      - 'release-updater/**'
+      - 'src/**'
       - '.github/workflows/android-apk.yml'
   pull_request:
     branches: [ master ]
     paths:
       - 'libgdx-touch/**'
+      - 'release-updater/**'
+      - 'src/**'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 

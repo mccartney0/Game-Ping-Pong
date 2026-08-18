@@ -1,1 +1,6 @@
 pong-stats.properties
+
+# Local release/build outputs
+build/
+dist/
+libgdx-touch/local.properties

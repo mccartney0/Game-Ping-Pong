@@ -24,6 +24,7 @@ import pong.entities.Player;
 import pong.ui.SoundManager;
 import pong.ui.UI;
 import pong.ui.VisualEffects;
+import pong.update.DesktopAutoUpdater;
 
 public class Game extends Canvas implements Runnable, KeyListener {
 
@@ -114,6 +115,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
     }
 
     public static void main(String[] args) {
+        DesktopAutoUpdater.check();
         Game game = new Game();
         frame = new JFrame("Neon Ping Pong");
         frame.setResizable(false);

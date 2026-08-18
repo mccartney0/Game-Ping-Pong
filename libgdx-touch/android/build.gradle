@@ -75,6 +75,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    buildFeatures {
+        buildConfig true
+    }
 
     signingConfigs {
         release {
@@ -110,6 +113,8 @@ android {
 
 dependencies {
     implementation project(':core')
+    implementation project(':release-updater')
+    implementation 'androidx.core:core:1.13.1'
     implementation "com.badlogicgames.gdx:gdx-backend-android:${gdxVersion}"
     implementation "com.google.android.gms:play-services-games-v2:21.0.0"
     implementation "com.google.android.gms:play-services-ads:24.8.0"

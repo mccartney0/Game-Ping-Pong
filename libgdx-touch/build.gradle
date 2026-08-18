@@ -10,7 +10,7 @@ buildscript {
 }
 
 allprojects {
-    version = '1.0.0'
+    version = project.findProperty('versionName') ?: System.getenv('VERSION_NAME') ?: '1.0.0'
     ext {
         appName = 'GamePingPongTouch'
         gdxVersion = '1.14.2'
