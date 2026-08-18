@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
+        android:name=".GameApplication"
         android:allowBackup="true"
         android:label="Game Ping Pong Touch"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
         android:resizeableActivity="true">
+        <meta-data
+            android:name="com.google.android.gms.games.APP_ID"
+            android:value="@string/game_services_project_id" />
         <activity
             android:name=".AndroidLauncher"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize"

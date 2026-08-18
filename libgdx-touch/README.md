@@ -92,3 +92,9 @@ gradle :core:build :android:assembleDebug --no-daemon --stacktrace
 ```
 
 Depois, publica `android/build/outputs/apk/debug/android-debug.apk` como artefato por 14 dias. Esse pipeline gera um APK debug não assinado para testes. Para release, adicione um keystore armazenado em GitHub Secrets, configure `signingConfigs` no módulo Android e troque a tarefa para `assembleRelease`.
+
+## Google Play Games Services
+
+O módulo Android inclui `AndroidGameServices` com PGS v2 para autenticação, envio de score no fim da partida e abertura da UI oficial de leaderboards. O `core` usa `GameServices` e `NoopGameServices`, portanto o launcher desktop continua offline.
+
+Antes de executar no Android, substitua o project ID e os IDs reais dos leaderboards em `android/src/main/res/values/strings.xml`. O passo a passo da Play Console, configuração de testadores e primeiro AAB está em [`PGS_PLAY_CONSOLE_SETUP.md`](PGS_PLAY_CONSOLE_SETUP.md).

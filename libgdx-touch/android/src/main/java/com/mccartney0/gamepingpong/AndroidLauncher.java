@@ -7,6 +7,8 @@ import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 
 public class AndroidLauncher extends AndroidApplication {
 
+    private PingPongTouchGame game;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -16,6 +18,12 @@ public class AndroidLauncher extends AndroidApplication {
         configuration.useAccelerometer = false;
         configuration.useCompass = false;
         configuration.numSamples = 0;
-        initialize(new PingPongTouchGame(), configuration);
+        game = new PingPongTouchGame(new AndroidGameServices(this));
+        game.setCurrentLeaderboardId(getString(R.string.leaderboard_survival_score));
+        initialize(game, configuration);
+    }
+
+    public PingPongTouchGame getGame() {
+        return game;
     }
 }

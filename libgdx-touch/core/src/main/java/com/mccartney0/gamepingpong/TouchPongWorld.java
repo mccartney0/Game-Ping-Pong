@@ -10,6 +10,7 @@ public class TouchPongWorld implements PaddleTouchTarget {
 
     public static final float WIDTH = 16f;
     public static final float HEIGHT = 12f;
+    public static final int MATCH_SCORE = 7;
 
     public float playerX = WIDTH / 2f;
     public float enemyX = WIDTH / 2f;
@@ -114,6 +115,10 @@ public class TouchPongWorld implements PaddleTouchTarget {
             resetBall(1f);
             lastEvent = "PLAYER POINT";
         }
+        if (playerScore >= MATCH_SCORE || enemyScore >= MATCH_SCORE) {
+            paused = true;
+            lastEvent = "MATCH OVER";
+        }
     }
 
     public void setPaused(boolean paused) {
@@ -131,6 +136,14 @@ public class TouchPongWorld implements PaddleTouchTarget {
 
     public BallEffects getBallEffects() {
         return ballEffects;
+    }
+
+    public boolean isMatchOver() {
+        return playerScore >= MATCH_SCORE || enemyScore >= MATCH_SCORE;
+    }
+
+    public long getLeaderboardScore() {
+        return playerScore;
     }
 
     public void setEffectsQuality(BallEffects.Quality quality) {
