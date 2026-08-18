@@ -125,11 +125,13 @@ public final class AndroidGameServices implements GameServices {
             return;
         }
         AchievementsClient achievements = PlayGames.getAchievementsClient(activity);
-        achievements.unlock(achievementId)
-                .addOnSuccessListener(unused ->
-                        notifySuccess(callback, "Achievement desbloqueado"))
-                .addOnFailureListener(error -> notifyFailure(callback,
-                        "Falha ao desbloquear achievement: " + safeMessage(error)));
+        try {
+            achievements.unlock(achievementId);
+            notifySuccess(callback, "Achievement desbloqueado");
+        } catch (RuntimeException error) {
+            notifyFailure(callback, "Falha ao desbloquear achievement: "
+                    + safeMessage(error));
+        }
     }
 
     @Override
@@ -140,11 +142,13 @@ public final class AndroidGameServices implements GameServices {
             return;
         }
         AchievementsClient achievements = PlayGames.getAchievementsClient(activity);
-        achievements.increment(achievementId, steps)
-                .addOnSuccessListener(unused ->
-                        notifySuccess(callback, "Achievement incrementado"))
-                .addOnFailureListener(error -> notifyFailure(callback,
-                        "Falha ao incrementar achievement: " + safeMessage(error)));
+        try {
+            achievements.increment(achievementId, steps);
+            notifySuccess(callback, "Achievement incrementado");
+        } catch (RuntimeException error) {
+            notifyFailure(callback, "Falha ao incrementar achievement: "
+                    + safeMessage(error));
+        }
     }
 
     @Override
