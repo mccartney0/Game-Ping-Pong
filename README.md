@@ -66,3 +66,17 @@ O APK de atualização deve ser assinado com a mesma chave usada na instalação
 
 [^1]: [GitHub REST API — Get the latest release](https://docs.github.com/en/rest/releases/releases#get-the-latest-release)
 [^2]: [GitHub Actions — Use GITHUB_TOKEN for authentication in workflows](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication)
+
+## Progresso visual do auto-updater
+
+O download dos três aplicativos agora é feito por streaming, usando blocos de 16 KiB, arquivo temporário `.part`, progresso por bytes, velocidade aproximada, ETA e cancelamento. O arquivo só recebe o nome final depois que a transferência termina; em seguida, o SHA-256 publicado na Release é validado antes de instalar ou abrir a distribuição.
+
+No Android, `AndroidAutoUpdater` exibe um diálogo com `ProgressBar`, porcentagem, bytes transferidos, velocidade, ETA e botão **Cancelar**. No Java/AWT e no desktop libGDX, o atualizador exibe um `JDialog` com `JProgressBar`, velocidade, ETA e cancelamento. As atualizações de interface são encaminhadas para a thread correta de cada toolkit.
+
+Para testar sem acessar uma Release real, o script `.github/scripts/mock-github-release.py` serve os três assets e a resposta compatível com `releases/latest`. O cliente aceita temporariamente uma base alternativa por propriedade de sistema, mantendo `https://api.github.com` como padrão de produção:
+
+```bash
+-Dgithub.api.base=http://127.0.0.1:8787
+```
+
+O teste unitário `DownloadProgressTest` cobre porcentagem, ETA, streaming para arquivo final, remoção do `.part` durante cancelamento e checksum de arquivo. O workflow de publicação também executa `:release-updater:test` antes de criar ou atualizar a GitHub Release.
