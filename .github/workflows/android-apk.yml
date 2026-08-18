@@ -1,0 +1,72 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'libgdx-touch/**'
+      - '.github/workflows/android-apk.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'libgdx-touch/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Compile libGDX Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: libgdx-touch
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+        working-directory: .
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
+      - name: Compile core and Android debug APK
+        run: gradle :core:build :android:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-ping-pong-touch-debug-apk
+          path: libgdx-touch/android/build/outputs/apk/debug/android-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Gradle reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-ping-pong-touch-gradle-reports
+          path: |
+            libgdx-touch/**/build/reports/**
+            libgdx-touch/**/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 7

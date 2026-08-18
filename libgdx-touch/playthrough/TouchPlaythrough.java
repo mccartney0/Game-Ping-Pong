@@ -1,9 +1,6 @@
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-
-import javax.imageio.ImageIO;
 
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector3;
@@ -132,6 +129,8 @@ public class TouchPlaythrough {
         check(world.playerDragEvents > 100, "arraste do jogador processado");
         check(world.enemyDragEvents > 100, "arraste do topo processado");
         check(world.abilityActivations == 2, "toque duplo ativa as duas habilidades");
+        check(world.getBallEffects().getActiveTrailCount() > 0, "trilha da bola emitida");
+        check(world.getBallEffects().getEmittedParticles() > 0, "particulas da bola emitidas");
         check(world.playerScore + world.enemyScore > 0, "playthrough gerou pontuacao");
         check(!Float.isNaN(world.ballX) && !Float.isNaN(world.ballY), "bola permanece numericamente valida");
 
@@ -143,12 +142,11 @@ public class TouchPlaythrough {
                     world.abilityActivations, world.pauseToggles, world.getLastEvent());
         }
 
-        // Artefato mínimo para deixar verificável que o playthrough terminou sem depender de uma janela GL.
-        BufferedImage marker = new BufferedImage(320, 90, BufferedImage.TYPE_INT_RGB);
-        ImageIO.write(marker, "png", new File("libgdx-touch/playthrough-ok.png"));
         System.out.println("touch playthrough: OK");
         System.out.println("score=" + world.playerScore + ":" + world.enemyScore);
         System.out.println("abilityActivations=" + world.abilityActivations);
         System.out.println("pauseToggles=" + world.pauseToggles);
+        System.out.println("activeTrail=" + world.getBallEffects().getActiveTrailCount());
+        System.out.println("emittedParticles=" + world.getBallEffects().getEmittedParticles());
     }
 }

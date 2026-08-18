@@ -38,11 +38,14 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
         Gdx.gl.glClearColor(0.005f, 0.01f, 0.03f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         camera.update();
         renderer.setProjectionMatrix(camera.combined);
         renderer.begin(ShapeRenderer.ShapeType.Filled);
         world.render(renderer);
         renderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
     }
 
     @Override

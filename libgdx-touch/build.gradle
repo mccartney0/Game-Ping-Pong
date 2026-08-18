@@ -15,10 +15,6 @@ allprojects {
         appName = 'GamePingPongTouch'
         gdxVersion = '1.14.2'
     }
-    repositories {
-        google()
-        mavenCentral()
-    }
 }
 
 subprojects {
@@ -33,6 +29,6 @@ configure(subprojects.findAll { it.name != 'android' }) {
     compileJava.options.encoding = 'UTF-8'
 }
 
-clean {
+tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }

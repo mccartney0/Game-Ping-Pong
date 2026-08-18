@@ -3,6 +3,7 @@ package com.mccartney0.gamepingpong;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.mccartney0.gamepingpong.input.PaddleSide;
+import com.mccartney0.gamepingpong.visual.BallEffects;
 import com.mccartney0.gamepingpong.input.PaddleTouchTarget;
 
 public class TouchPongWorld implements PaddleTouchTarget {
@@ -30,6 +31,7 @@ public class TouchPongWorld implements PaddleTouchTarget {
     private boolean paused;
     private float abilityTicks;
     private String lastEvent = "READY";
+    private final BallEffects ballEffects = new BallEffects();
 
     @Override
     public void movePaddleTo(PaddleSide side, float worldX) {
@@ -55,6 +57,7 @@ public class TouchPongWorld implements PaddleTouchTarget {
             ballDx *= 0.90f;
             lastEvent = "TOP SHIELD";
         }
+        ballEffects.burst(ballX, ballY, ballDx, ballDy, 16, 1.5f);
     }
 
     @Override
@@ -78,30 +81,36 @@ public class TouchPongWorld implements PaddleTouchTarget {
             abilityTicks -= safeDelta;
         }
 
+        ballEffects.update(safeDelta, ballX, ballY, ballDx, ballDy);
         ballX += ballDx * safeDelta;
         ballY += ballDy * safeDelta;
         if (ballX < 0.2f || ballX > WIDTH - 0.2f) {
             ballX = Math.max(0.2f, Math.min(WIDTH - 0.2f, ballX));
             ballDx *= -1f;
+            ballEffects.burst(ballX, ballY, ballDx, ballDy, 8, 1.0f);
             lastEvent = "WALL HIT";
         }
 
         if (ballDy < 0f && intersectsPaddle(playerX, playerY)) {
             ballY = playerY + paddleHeight + 0.2f;
             bounceFrom(playerX, playerY, false);
+            ballEffects.burst(ballX, ballY, ballDx, ballDy, 12, 1.25f);
             lastEvent = "PLAYER HIT";
         } else if (ballDy > 0f && intersectsPaddle(enemyX, enemyY)) {
             ballY = enemyY - 0.2f;
             bounceFrom(enemyX, enemyY, true);
+            ballEffects.burst(ballX, ballY, ballDx, ballDy, 12, 1.25f);
             lastEvent = "TOP HIT";
         }
 
         if (ballY < -0.5f) {
             enemyScore++;
+            ballEffects.burst(ballX, 0.1f, ballDx, ballDy, 24, 1.65f);
             resetBall(-1f);
             lastEvent = "ENEMY POINT";
         } else if (ballY > HEIGHT + 0.5f) {
             playerScore++;
+            ballEffects.burst(ballX, HEIGHT - 0.1f, ballDx, ballDy, 24, 1.65f);
             resetBall(1f);
             lastEvent = "PLAYER POINT";
         }
@@ -120,11 +129,20 @@ public class TouchPongWorld implements PaddleTouchTarget {
         return lastEvent;
     }
 
+    public BallEffects getBallEffects() {
+        return ballEffects;
+    }
+
+    public void setEffectsQuality(BallEffects.Quality quality) {
+        ballEffects.setQuality(quality);
+    }
+
     public void render(ShapeRenderer renderer) {
         renderer.setColor(new Color(0.02f, 0.06f, 0.14f, 1f));
         renderer.rect(0f, 0f, WIDTH, HEIGHT);
         renderer.setColor(new Color(0.14f, 0.35f, 0.55f, 1f));
         renderer.line(WIDTH / 2f, 0f, WIDTH / 2f, HEIGHT);
+        ballEffects.render(renderer);
         renderer.setColor(new Color(0.2f, 0.85f, 1f, 1f));
         renderer.rect(playerX - paddleWidth / 2f, playerY, paddleWidth, paddleHeight);
         renderer.setColor(new Color(1f, 0.55f, 0.3f, 1f));

@@ -68,3 +68,27 @@ java -Djava.awt.headless=true \
 ```
 
 O resultado detalhado fica em `playthrough.log`.
+
+## Efeitos visuais da bola
+
+`BallEffects` mantém pools fixos de pontos de trilha e partículas, evitando criar objetos durante cada frame. A trilha acompanha a posição e a velocidade da bola; partículas são emitidas em colisões com paredes e raquetes, ativações de habilidade e pontos. O renderer habilita alpha blending apenas durante a camada visual.
+
+A qualidade pode ser ajustada em três níveis:
+
+```java
+world.setEffectsQuality(BallEffects.Quality.LOW);
+world.setEffectsQuality(BallEffects.Quality.MEDIUM);
+world.setEffectsQuality(BallEffects.Quality.HIGH);
+```
+
+`LOW`, `MEDIUM` e `HIGH` controlam a quantidade máxima de pontos de trilha e partículas. Para economizar bateria em aparelhos antigos, use `LOW`, desligue os efeitos em menus/pausa e mantenha o `ShapeRenderer` fora de loops de criação de objetos.
+
+## GitHub Actions
+
+O arquivo `.github/workflows/android-apk.yml` executa quando há alterações em `libgdx-touch/` ou manualmente por `workflow_dispatch`. O job instala Java 17, Android SDK/API 35, Gradle 8.2, executa:
+
+```bash
+gradle :core:build :android:assembleDebug --no-daemon --stacktrace
+```
+
+Depois, publica `android/build/outputs/apk/debug/android-debug.apk` como artefato por 14 dias. Esse pipeline gera um APK debug não assinado para testes. Para release, adicione um keystore armazenado em GitHub Secrets, configure `signingConfigs` no módulo Android e troque a tarefa para `assembleRelease`.
