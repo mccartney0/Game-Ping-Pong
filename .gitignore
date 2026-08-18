@@ -1,1 +1,7 @@
 pong-stats.properties
+
+# FoldCut Android build artifacts
+foldcut-android/.gradle/
+foldcut-android/build/
+foldcut-android/app/build/
+foldcut-android/local.properties
