@@ -164,6 +164,6 @@ A sequência do pipeline é:
 ./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace
 ```
 
-A etapa instrumentada usa um emulador API 35 com Google APIs. O APK debug é publicado como artefato por 14 dias. Falhas preservam relatórios Gradle e resultados de testes quando existirem.
+A etapa instrumentada usa um emulador API 34 com Google APIs e opções headless para reduzir falhas de boot; o APK e o target continuam em API 35. O APK debug é publicado como artefato por 14 dias. Falhas preservam relatórios Gradle e resultados de testes quando existirem.
 
 O workflow de debug não injeta IDs de produção nem credenciais de assinatura. O workflow separado [`.github/workflows/android-release.yml`](../.github/workflows/android-release.yml), acionado manualmente ou por tag `v*.*.*`, restaura a upload key apenas no runner, exige todos os IDs e Secrets de produção e executa `bundleRelease`; se qualquer valor obrigatório estiver ausente, o job falha antes de gerar o AAB.
