@@ -1,7 +1,7 @@
 # Atualização Canônica e Visual
 
 - [x] Criar comerciantes de Veyra, moeda de rota e compra persistente de cargas.
-- [ ] Implementar roda de consumíveis pelo mouse e manter atalhos 5, 6 e 7.
+- [x] Implementar roda de consumíveis pelo mouse e manter atalhos 5, 6 e 7.
 - [ ] Integrar vozes PT-BR substituíveis e reprodução de fala para diálogos canônicos.
 - [ ] Reforçar efeitos sonoros de combate, magias, compras e uso de consumíveis.
 - [ ] Estruturar localização PT-BR e inglês para interfaces, comércio e diálogos principais.
