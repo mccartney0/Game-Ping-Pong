@@ -1,5 +1,9 @@
 # Atualização Canônica e Visual
 
+- [x] Definir vozes naturais distintas e arquivos substituíveis para cada personagem.
+- [x] Criar opções persistentes de narração, legendas de diálogo e legendas de ações.
+- [x] Sincronizar a duração de falas e o fechamento automático de diálogos e avisos de ação.
+- [x] Validar áudio, acessibilidade, encerramentos e persistência em Veyra.
 - [x] Criar comerciantes de Veyra, moeda de rota e compra persistente de cargas.
 - [x] Implementar roda de consumíveis pelo mouse e manter atalhos 5, 6 e 7.
 - [x] Integrar vozes PT-BR substituíveis e reprodução de fala para diálogos canônicos.

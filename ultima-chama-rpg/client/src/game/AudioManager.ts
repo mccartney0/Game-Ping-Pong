@@ -1,30 +1,35 @@
 /**
- * Gravura de Cinzas — efeitos sintetizados e direção de voz PT-BR substituível.
- * Para trocar vozes no futuro, altere VOICE_ASSET_OVERRIDES para novos arquivos em /manus-storage.
+ * Gravura de Cinzas — efeitos sintetizados e vozes naturais PT-BR substituíveis.
+ * Para trocar uma fala final, altere DIALOGUE_AUDIO_OVERRIDES para um novo arquivo em /manus-storage.
  */
 export type VoiceSpeaker = "Kael" | "Dheren" | "Dheren Varenn" | "Lyra" | "Mira" | "Boticária" | "Tecelão" | "Darion" | "Escriba" | "Barqueiro" | "Arauto Mascarado";
 
-const VOICE_PROFILES: Record<VoiceSpeaker, { rate: number; pitch: number; sample: string }> = {
-  Kael: { rate: .98, pitch: 1.08, sample: "/manus-storage/kael-ptbr-voice-sample_3f10b14f.wav" },
-  Dheren: { rate: .92, pitch: .78, sample: "/manus-storage/dheren-ptbr-voice-sample_f56da05b.wav" },
-  "Dheren Varenn": { rate: .92, pitch: .78, sample: "/manus-storage/dheren-ptbr-voice-sample_f56da05b.wav" },
-  Lyra: { rate: .96, pitch: 1.13, sample: "/manus-storage/lyra-ptbr-voice-sample_34250906.wav" },
-  Mira: { rate: 1.05, pitch: 1.03, sample: "/manus-storage/mira-ptbr-voice-sample_3603e475.wav" },
-  Boticária: { rate: .94, pitch: 1.0, sample: "/manus-storage/mira-ptbr-voice-sample_3603e475.wav" },
-  Tecelão: { rate: .9, pitch: .85, sample: "/manus-storage/dheren-ptbr-voice-sample_f56da05b.wav" },
-  Darion: { rate: .88, pitch: .75, sample: "/manus-storage/dheren-ptbr-voice-sample_f56da05b.wav" },
-  Escriba: { rate: .91, pitch: .98, sample: "/manus-storage/lyra-ptbr-voice-sample_34250906.wav" },
-  Barqueiro: { rate: .86, pitch: .8, sample: "/manus-storage/dheren-ptbr-voice-sample_f56da05b.wav" },
-  "Arauto Mascarado": { rate: .82, pitch: .65, sample: "/manus-storage/dheren-ptbr-voice-sample_f56da05b.wav" },
+const VOICE_PROFILES: Record<VoiceSpeaker, { sample: string }> = {
+  Kael: { sample: "/manus-storage/kael-natural-forest-v2_0343a07b.wav" },
+  Dheren: { sample: "/manus-storage/dheren-natural-guard_c87b4aae.wav" },
+  "Dheren Varenn": { sample: "/manus-storage/dheren-natural-guard_c87b4aae.wav" },
+  Lyra: { sample: "/manus-storage/lyra-natural-road_395faa0c.wav" },
+  Mira: { sample: "/manus-storage/mira-natural-trail-v2_119e8bac.wav" },
+  Boticária: { sample: "/manus-storage/mira-natural-trail-v2_119e8bac.wav" },
+  Tecelão: { sample: "/manus-storage/dheren-natural-guard_c87b4aae.wav" },
+  Darion: { sample: "/manus-storage/dheren-natural-guard_c87b4aae.wav" },
+  Escriba: { sample: "/manus-storage/lyra-natural-road_395faa0c.wav" },
+  Barqueiro: { sample: "/manus-storage/dheren-natural-guard_c87b4aae.wav" },
+  "Arauto Mascarado": { sample: "/manus-storage/dheren-natural-guard_c87b4aae.wav" },
 };
 
-const VOICE_ASSET_OVERRIDES: Partial<Record<VoiceSpeaker, string>> = {};
+const DIALOGUE_AUDIO_OVERRIDES: Record<string, string> = {
+  "Dheren::Fica atrás de mim, Kael. Pela primeira vez, tenta não queimar a vila inteira.": "/manus-storage/dheren-natural-guard_c87b4aae.wav",
+  "Dheren Varenn::Fica atrás de mim, Kael. Pela primeira vez, tenta não queimar a vila inteira.": "/manus-storage/dheren-natural-guard_c87b4aae.wav",
+  "Kael::A floresta. Agora.": "/manus-storage/kael-natural-forest-v2_0343a07b.wav",
+  "Lyra::Não me façam repetir: sigam a estrada e mantenham a chama baixa.": "/manus-storage/lyra-natural-road_395faa0c.wav",
+  "Mira::O livro fica com vocês. Eu fico com a trilha.": "/manus-storage/mira-natural-trail-v2_119e8bac.wav",
+};
 
 export class AudioManager {
   private context: AudioContext | null = null;
-  private voicesEnabled = true;
-  private voiceQueue: Array<{ speaker: string; text: string }> = [];
-  private voiceBusy = false;
+  private narrationEnabled = true;
+  private activeNarration: HTMLAudioElement | null = null;
   async unlock() {
     if (!this.context) this.context = new AudioContext();
     if (this.context.state === "suspended") await this.context.resume();
@@ -48,9 +53,9 @@ export class AudioManager {
   magic(kind: "arcane" | "arrow" | "needle" | "gold") { const notes = { arcane: [420, 620], arrow: [720, 980], needle: [840, 1140], gold: [360, 620] }[kind]; this.tone(notes[0], .12, "triangle", .045); window.setTimeout(() => this.tone(notes[1], .16, kind === "arcane" ? "sine" : "triangle", .03), 45); }
   consumable(kind: "bruma" | "sal" | "fio") { const notes = { bruma: [560, 760], sal: [230, 380], fio: [760, 1030] }[kind]; this.tone(notes[0], .13, "triangle", .06); window.setTimeout(() => this.tone(notes[1], .18, "sine", .045), 65); }
   purchase() { this.tone(620, .09, "triangle", .05); window.setTimeout(() => this.tone(880, .15, "sine", .04), 70); }
-  setVoicesEnabled(enabled: boolean) { this.voicesEnabled = enabled; if (!enabled && "speechSynthesis" in window) { this.voiceQueue = []; this.voiceBusy = false; window.speechSynthesis.cancel(); } }
-  speak(speaker: string, text: string) { if (!this.voicesEnabled || !("speechSynthesis" in window) || !text.trim()) return; this.voiceQueue.push({ speaker, text }); this.playQueuedDialogue(); }
-  private playQueuedDialogue() { if (this.voiceBusy || !this.voiceQueue.length || !("speechSynthesis" in window)) return; const next = this.voiceQueue.shift()!; const profile = VOICE_PROFILES[next.speaker as VoiceSpeaker] ?? VOICE_PROFILES.Kael; const utterance = new SpeechSynthesisUtterance(next.text.replace(/\[[^\]]+\]/g, "")); utterance.lang = "pt-BR"; utterance.rate = profile.rate; utterance.pitch = profile.pitch; utterance.volume = .86; const voice = window.speechSynthesis.getVoices().find((candidate) => candidate.lang.toLowerCase().startsWith("pt-br")); if (voice) utterance.voice = voice; this.voiceBusy = true; utterance.onend = () => { this.voiceBusy = false; this.playQueuedDialogue(); }; utterance.onerror = () => { this.voiceBusy = false; this.playQueuedDialogue(); }; window.speechSynthesis.speak(utterance); }
-  previewVoice(speaker: string) { const profile = VOICE_PROFILES[speaker as VoiceSpeaker] ?? VOICE_PROFILES.Kael; const sample = VOICE_ASSET_OVERRIDES[speaker as VoiceSpeaker] ?? profile.sample; const audio = new Audio(sample); audio.volume = .72; void audio.play().catch(() => undefined); }
-  dispose() { this.voiceQueue = []; if ("speechSynthesis" in window) window.speechSynthesis.cancel(); void this.context?.close(); this.context = null; }
+  setNarrationEnabled(enabled: boolean) { this.narrationEnabled = enabled; if (!enabled) this.stopNarration(); }
+  speak(speaker: string, text: string, onComplete: () => void) { if (!this.narrationEnabled || !text.trim()) return false; const source = DIALOGUE_AUDIO_OVERRIDES[`${speaker}::${text}`]; if (!source) return false; this.stopNarration(); const audio = new Audio(source); this.activeNarration = audio; audio.volume = .88; audio.onended = () => { if (this.activeNarration === audio) this.activeNarration = null; onComplete(); }; audio.onerror = () => { if (this.activeNarration === audio) this.activeNarration = null; onComplete(); }; void audio.play().catch(() => onComplete()); return true; }
+  previewVoice(speaker: string) { const profile = VOICE_PROFILES[speaker as VoiceSpeaker] ?? VOICE_PROFILES.Kael; this.stopNarration(); const audio = new Audio(profile.sample); this.activeNarration = audio; audio.volume = .8; audio.onended = () => { if (this.activeNarration === audio) this.activeNarration = null; }; void audio.play().catch(() => undefined); }
+  private stopNarration() { if (!this.activeNarration) return; this.activeNarration.pause(); this.activeNarration.currentTime = 0; this.activeNarration = null; }
+  dispose() { this.stopNarration(); void this.context?.close(); this.context = null; }
 }

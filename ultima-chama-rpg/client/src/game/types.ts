@@ -171,6 +171,6 @@ export interface SaveData {
   dailyMissions: DailyMissionState[];
   dynamicEvent: DynamicEventState;
   unlockedAbilities: string[];
-  settings: { difficulty: "Historia" | "Aventura" | "Veterano" | "Lendario"; reducedMotion: boolean; language: "pt-BR" | "en" };
+  settings: { difficulty: "Historia" | "Aventura" | "Veterano" | "Lendario"; reducedMotion: boolean; language: "pt-BR" | "en"; narrationEnabled: boolean; dialogueSubtitlesEnabled: boolean; actionSubtitlesEnabled: boolean };
   savedAt: number;
 }
