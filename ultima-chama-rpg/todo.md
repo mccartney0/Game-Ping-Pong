@@ -1,5 +1,9 @@
 # Atualização Canônica e Visual
 
+- [x] Criar guia contextual de controles e recomendações de próxima ação.
+- [x] Adicionar bússola de objetivo e indicadores de interesse para exploração de Veyra.
+- [x] Melhorar feedback de combate, coleta e interação com histórico de eventos e confirmações claras.
+- [x] Validar os novos apoios de experiência, controles e leitura em combate e exploração.
 - [x] Adicionar modal de confirmação e cancelamento antes da restauração global.
 - [x] Validar foco, confirmação, cancelamento e visual do modal de proteção.
 - [x] Adicionar restauração global de padrões para jogo, áudio e acessibilidade.

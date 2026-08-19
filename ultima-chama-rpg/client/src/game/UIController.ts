@@ -61,6 +61,9 @@ export class UIController {
   private merchantMarks = 0;
   private activePauseTab = "game";
   private presentationSettings = { narrationEnabled: true, dialogueSubtitlesEnabled: true, actionSubtitlesEnabled: true };
+  private guidanceFingerprint = "";
+  private eventLog: string[] = [];
+  private combatBeatTimer = 0;
   private readonly l10n = new Localization();
   private readonly evidence = [
     { id: "market", title: "Mercado de Veyra", type: "LOCAL", description: "Bancas fechadas às pressas e vendedores que só falam quando a multidão muda de rumo." },
@@ -99,7 +102,7 @@ export class UIController {
         </div>
       </section>
       <section class="rpg-hud" id="rpg-hud" aria-live="polite">
-        <div class="objective-scroll"><span class="small-label" data-i18n="journey">JORNADA</span><strong id="objective-text">A chama não obedece</strong><span id="interaction-hint"></span></div>
+        <div class="objective-scroll"><span class="small-label" data-i18n="journey">JORNADA</span><strong id="objective-text">A chama não obedece</strong><span id="interaction-hint"></span></div><aside class="event-ledger" id="event-ledger" aria-live="polite"><span>TRILHA RECENTE</span><ul id="event-ledger-items"><li>O Grimório aguarda sua primeira marca.</li></ul></aside><aside class="wayfinder" id="wayfinder"><header><span>RUMO DA TRILHA</span><b id="guidance-mode">EXPLORAÇÃO</b></header><div><i id="guidance-arrow">▲</i><section><strong id="guidance-title">Siga a chama</strong><small id="guidance-detail">O próximo passo ganhará forma ao se aproximar.</small></section><em id="guidance-distance">—</em></div><p id="field-guide">WASD move. F interage. Em combate, mantenha o alvo visível antes de gastar o cinto.</p></aside><div class="combat-beat" id="combat-beat" aria-live="assertive"></div>
         <div class="character-card">
           <div class="character-name"><span id="active-name">KAEL</span><small id="active-role">MAGO / BRUXO</small></div>
           <div class="meter"><i class="health" id="health-bar"></i></div>
@@ -173,6 +176,9 @@ export class UIController {
   private closeRestoreConfirmation() { const modal = this.element("restore-confirmation"); if (!modal) return; modal.setAttribute("aria-hidden", "true"); this.element<HTMLButtonElement>("restore-settings")?.focus(); }
   showTitle() { this.element("title-screen")?.classList.remove("hidden"); this.element("ending-screen")?.setAttribute("aria-hidden", "true"); }
   beginGame() { this.element("title-screen")?.classList.add("hidden"); this.element("rpg-hud")?.classList.add("visible"); }
+  updateGuidance(data: { title: string; detail: string; distance: number; bearing: number; mode: string; tip: string }) { const fingerprint = `${data.title}|${data.detail}|${Math.round(data.distance)}|${Math.round(data.bearing)}|${data.mode}|${data.tip}`; if (fingerprint === this.guidanceFingerprint) return; this.guidanceFingerprint = fingerprint; const title = this.element("guidance-title"); const detail = this.element("guidance-detail"); const distance = this.element("guidance-distance"); const mode = this.element("guidance-mode"); const arrow = this.element("guidance-arrow"); const tip = this.element("field-guide"); if (title) title.textContent = data.title; if (detail) detail.textContent = data.detail; if (distance) distance.textContent = data.distance > 0 ? `${Math.round(data.distance)}m` : "—"; if (mode) mode.textContent = data.mode; if (arrow) arrow.style.transform = `rotate(${data.bearing}deg)`; if (tip) tip.textContent = data.tip; }
+  recordEvent(text: string) { const clean = text.trim(); if (!clean || this.eventLog[0] === clean) return; this.eventLog = [clean, ...this.eventLog].slice(0, 3); const list = this.element("event-ledger-items"); if (list) list.innerHTML = this.eventLog.map((entry) => `<li>${entry}</li>`).join(""); }
+  combatBeat(text: string, kind: "hit" | "finish" | "guard" = "hit") { const beat = this.element("combat-beat"); if (!beat) return; window.clearTimeout(this.combatBeatTimer); beat.textContent = text; beat.className = `combat-beat visible ${kind}`; this.combatBeatTimer = window.setTimeout(() => beat.classList.remove("visible"), 720); }
   setGameSettings(settings: { difficulty: "Historia" | "Aventura" | "Veterano" | "Lendario"; language: GameLanguage }) { const difficulty = this.element<HTMLSelectElement>("difficulty"); const language = this.element<HTMLSelectElement>("language"); if (difficulty) difficulty.value = settings.difficulty; if (language) language.value = settings.language; }
   setPresentationSettings(settings: { narrationEnabled: boolean; dialogueSubtitlesEnabled: boolean; actionSubtitlesEnabled: boolean }) { this.presentationSettings = settings; const narration = this.element<HTMLInputElement>("narration-enabled"); const dialogue = this.element<HTMLInputElement>("dialogue-subtitles-enabled"); const action = this.element<HTMLInputElement>("action-subtitles-enabled"); if (narration) narration.checked = settings.narrationEnabled; if (dialogue) dialogue.checked = settings.dialogueSubtitlesEnabled; if (action) action.checked = settings.actionSubtitlesEnabled; if (!settings.dialogueSubtitlesEnabled) this.clearDialogue(); if (!settings.actionSubtitlesEnabled) { this.element("rpg-notification")?.classList.remove("visible"); this.clearBossWarning(); } }
   private emitPresentationSettings() { this.callbacks.changePresentationSettings({ narrationEnabled: this.element<HTMLInputElement>("narration-enabled")?.checked ?? true, dialogueSubtitlesEnabled: this.element<HTMLInputElement>("dialogue-subtitles-enabled")?.checked ?? true, actionSubtitlesEnabled: this.element<HTMLInputElement>("action-subtitles-enabled")?.checked ?? true }); }
