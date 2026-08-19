@@ -1,5 +1,7 @@
 # Atualização Canônica e Visual
 
+- [x] Adicionar restauração global de padrões para jogo, áudio e acessibilidade.
+- [x] Validar atualização imediata, persistência e leitura visual do botão de restauração.
 - [x] Criar volumes individuais persistentes para voz, efeitos e música.
 - [x] Reorganizar o menu de pausa em abas de jogo, áudio e acessibilidade.
 - [x] Validar controles de volume, abas, persistência e leitura visual em Veyra.
