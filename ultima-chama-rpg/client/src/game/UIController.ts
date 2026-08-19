@@ -2,6 +2,7 @@
  * Gravura de Cinzas — HUD discreto de pergaminho e cinza; o mundo 3D continua dominante.
  */
 import { CONSUMABLES, CRAFT_RECIPES, EQUIPMENT, MATERIALS, VEYRA_SHOP_OFFERS } from "./data";
+import { Localization, type GameLanguage } from "./Localization";
 import type { CharacterId, ConsumableId, DailyMissionState, DynamicEventState, EquipmentSetProgress, EquipmentSlot, NarrativeStage } from "./types";
 
 export interface HudState {
@@ -26,6 +27,7 @@ export interface UICallbacks {
   continueGame: () => void;
   saveGame: () => void;
   changeDifficulty: (value: "Historia" | "Aventura" | "Veterano" | "Lendario") => void;
+  changeLanguage: (value: GameLanguage) => void;
   updateInvestigationLinks: (links: string[]) => void;
   chooseGuildClue: (choice: "mapas" | "nomes") => void;
   equipItem: (owner: CharacterId, itemId: string) => void;
@@ -51,6 +53,8 @@ export class UIController {
   private craftingFingerprint = "";
   private beltFingerprint = "";
   private activeMerchantId = "";
+  private merchantMarks = 0;
+  private readonly l10n = new Localization();
   private readonly evidence = [
     { id: "market", title: "Mercado de Veyra", type: "LOCAL", description: "Bancas fechadas às pressas e vendedores que só falam quando a multidão muda de rumo." },
     { id: "contract", title: "Contrato das Três Chamas", type: "DOCUMENTO", description: "A marca liga compra de relíquias, nomes riscados e pagamentos sem origem." },
@@ -76,19 +80,19 @@ export class UIController {
         <div class="title-content">
           <div class="title-crown" aria-hidden="true"><i></i><i></i><i></i></div>
           <div class="rune-mark" aria-hidden="true"><span></span></div>
-          <p class="eyebrow">LIVRO I · VERTICAL SLICE</p>
+          <p class="eyebrow" data-i18n="bookOne">LIVRO I · VERTICAL SLICE</p>
           <h1>A CHAMA<br/><em>DO ÚLTIMO</em> REINO</h1>
           <p class="title-chronicle">FERROSUL · CINZA · MEMÓRIA</p>
           <p class="title-hook">A chama não obedece. Ainda.</p>
           <div class="title-actions">
-            <button class="rpg-button primary" id="new-game">Acender a chama</button>
-            <button class="rpg-button" id="continue-game">Continuar crônica</button>
+            <button class="rpg-button primary" id="new-game" data-i18n="start">Acender a chama</button>
+            <button class="rpg-button" id="continue-game" data-i18n="continue">Continuar crônica</button>
           </div>
-          <p class="control-note">WASD mover · Mouse câmera · botão do meio: roda · 5 / 6 / 7 cinto · I inventário · F interagir · F1 debug</p>
+          <p class="control-note" data-i18n="controls">WASD mover · Mouse câmera · botão do meio: roda · 5 / 6 / 7 cinto · I inventário · F interagir · F1 debug</p>
         </div>
       </section>
       <section class="rpg-hud" id="rpg-hud" aria-live="polite">
-        <div class="objective-scroll"><span class="small-label">JORNADA</span><strong id="objective-text">A chama não obedece</strong><span id="interaction-hint"></span></div>
+        <div class="objective-scroll"><span class="small-label" data-i18n="journey">JORNADA</span><strong id="objective-text">A chama não obedece</strong><span id="interaction-hint"></span></div>
         <div class="character-card">
           <div class="character-name"><span id="active-name">KAEL</span><small id="active-role">MAGO / BRUXO</small></div>
           <div class="meter"><i class="health" id="health-bar"></i></div>
@@ -115,17 +119,17 @@ export class UIController {
         <article class="investigation-page" id="grimoire-investigation" aria-hidden="true"><div class="investigation-heading"><div><span class="small-label">PÁGINAS CONECTADAS</span><h3>Trilha da Coroa</h3></div><span id="investigation-status">0 conexões</span></div><p class="investigation-hint">Selecione uma pista e depois outra para traçar um fio no Grimório. Três conexões revelam quem está observando a investigação.</p><div class="evidence-board" id="evidence-board"></div><div class="investigation-threads" id="investigation-threads"></div><article class="investigation-detail" id="investigation-detail"><span>✦</span><h3>Escolha uma pista</h3><p>O Grimório só liga aquilo que a jornada tornou visível.</p></article></article>
       </section>
       <section class="parchment-panel pause-menu" id="pause-panel" aria-hidden="true">
-        <button class="close-panel" data-close="pause-panel">×</button><p class="eyebrow">CRÔNICA EM PAUSA</p><h2>Fogo guardado</h2>
-        <button class="rpg-button primary" id="save-game">Salvar no grimório</button>
-        <label>Dificuldade<select id="difficulty"><option>Historia</option><option selected>Aventura</option><option>Veterano</option><option>Lendario</option></select></label>
-        <p>O jogo é salvo localmente neste navegador.</p><section class="voice-settings"><header><span>VOZES DE CENA · PT-BR</span><b>SUBSTITUÍVEIS</b></header><p>As falas são narradas em PT-BR. Use as prévias para ouvir as assinaturas de voz; arquivos futuros podem substituir estes perfis.</p><div><button data-preview-voice="Kael">Kael</button><button data-preview-voice="Dheren Varenn">Dheren Varenn</button><button data-preview-voice="Lyra">Lyra</button><button data-preview-voice="Mira">Mira</button></div></section>
+        <button class="close-panel" data-close="pause-panel">×</button><p class="eyebrow" data-i18n="pause">CRÔNICA EM PAUSA</p><h2 data-i18n="pauseTitle">Fogo guardado</h2>
+        <button class="rpg-button primary" id="save-game" data-i18n="save">Salvar no grimório</button>
+        <label><span data-i18n="difficulty">Dificuldade</span><select id="difficulty"><option>Historia</option><option selected>Aventura</option><option>Veterano</option><option>Lendario</option></select></label><label><span data-i18n="language">Idioma</span><select id="language"><option value="pt-BR">Português (Brasil)</option><option value="en">English</option></select></label>
+        <p data-i18n="localSave">O jogo é salvo localmente neste navegador.</p><section class="voice-settings"><header><span data-i18n="voices">VOZES DE CENA · PT-BR</span><b data-i18n="replaceable">SUBSTITUÍVEIS</b></header><p>As falas são narradas em PT-BR. Use as prévias para ouvir as assinaturas de voz; arquivos futuros podem substituir estes perfis.</p><div><button data-preview-voice="Kael">Kael</button><button data-preview-voice="Dheren Varenn">Dheren Varenn</button><button data-preview-voice="Lyra">Lyra</button><button data-preview-voice="Mira">Mira</button></div></section>
       </section>
       <section class="parchment-panel inventory-panel" id="inventory-panel" aria-hidden="true">
         <button class="close-panel" data-close="inventory-panel">×</button><p class="eyebrow">BOLSA DE JORNADA</p><h2>Inventário</h2>
         <p class="inventory-hint">Selecione um item para registrar sua utilidade na crônica.</p><section class="crafting-board" id="crafting-board"></section><div class="equipment-header"><span>ARMAS E MELHORIAS</span><b id="upgrade-tokens">FRAGMENTOS 0</b></div><div class="equipment-slots" id="equipment-slots"></div><div class="equipment-sets" id="equipment-sets"></div><div class="equipment-catalog" id="equipment-catalog"></div><div class="inventory-grid" id="inventory-grid"></div><article class="inventory-detail" id="inventory-detail"><span>✦</span><h3>Nenhum item selecionado</h3><p>As Marcas da Estrada Morta aparecem aqui depois de recolhidas.</p></article>
       </section>
       <section class="parchment-panel merchant-panel" id="merchant-panel" aria-hidden="true">
-        <button class="close-panel" data-close="merchant-panel">×</button><p class="eyebrow">COMÉRCIO DE VEYRA</p><h2 id="merchant-name">Banca de Rotas</h2><p class="merchant-intro">Cargas preparadas para quem prefere uma rota curta a uma despedida longa.</p><div id="merchant-contents"></div>
+        <button class="close-panel" data-close="merchant-panel">×</button><p class="eyebrow" data-i18n="shop">COMÉRCIO DE VEYRA</p><h2 id="merchant-name">Banca de Rotas</h2><p class="merchant-intro" id="merchant-intro">Cargas preparadas para quem prefere uma rota curta a uma despedida longa.</p><div id="merchant-contents"></div>
       </section>
       <section class="debug-panel" id="debug-panel" aria-hidden="true"><strong>F1 · VIGÍLIA DO DESENVOLVEDOR</strong><div><button data-debug="heal">Curar</button><button data-debug="spawn">Invocar inimigo</button><button data-debug="kill">Eliminar inimigos</button><button data-debug="attack">Saltar para ataque</button><button data-debug="kael">Kael</button><button data-debug="dheren">Dheren</button></div></section>
       <section class="ending-screen" id="ending-screen" aria-hidden="true"><div><p class="eyebrow">CAPÍTULO SEGUINTE LIBERADO</p><h2>A CHAMA<br/>DO ÚLTIMO REINO</h2><p>Ferrosul arde atrás deles. Em Elwen, uma arqueira observa a estrada morta.</p><button class="rpg-button primary" id="ending-menu">Voltar ao grimório</button></div></section>
@@ -143,6 +147,7 @@ export class UIController {
     this.root.querySelector<HTMLButtonElement>("#ending-menu")?.addEventListener("click", () => this.showTitle());
     this.root.querySelectorAll<HTMLButtonElement>("[data-close]").forEach((button) => button.addEventListener("click", () => this.close(button.dataset.close || "")));
     this.root.querySelector<HTMLSelectElement>("#difficulty")?.addEventListener("change", (event) => this.callbacks.changeDifficulty((event.currentTarget as HTMLSelectElement).value as "Historia" | "Aventura" | "Veterano" | "Lendario"));
+    this.root.querySelector<HTMLSelectElement>("#language")?.addEventListener("change", (event) => this.callbacks.changeLanguage((event.currentTarget as HTMLSelectElement).value as GameLanguage));
     this.root.querySelectorAll<HTMLButtonElement>("[data-debug]").forEach((button) => button.addEventListener("click", () => this.callbacks.debugAction(button.dataset.debug || "")));
     this.root.querySelectorAll<HTMLButtonElement>("[data-preview-voice]").forEach((button) => button.addEventListener("click", () => this.callbacks.previewVoice(button.dataset.previewVoice || "Kael")));
     this.root.querySelectorAll<HTMLButtonElement>("[data-grimoire-tab]").forEach((button) => button.addEventListener("click", () => this.showGrimoireTab(button.dataset.grimoireTab || "journey")));
@@ -150,9 +155,10 @@ export class UIController {
   private element<T extends HTMLElement>(id: string) { return this.root.querySelector<T>(`#${id}`); }
   showTitle() { this.element("title-screen")?.classList.remove("hidden"); this.element("ending-screen")?.setAttribute("aria-hidden", "true"); }
   beginGame() { this.element("title-screen")?.classList.add("hidden"); this.element("rpg-hud")?.classList.add("visible"); }
-  openShop(merchantId: string, marks: number) { this.activeMerchantId = merchantId; this.element("merchant-panel")?.setAttribute("aria-hidden", "false"); this.renderShop(marks); }
-  updateShop(marks: number) { if (this.activeMerchantId) this.renderShop(marks); }
-  private renderShop(marks: number) { const name = this.element("merchant-name"); const body = this.element("merchant-contents"); if (!body || !this.activeMerchantId) return; const merchantName = this.activeMerchantId === "merchant-apothecary" ? "Boticária da Bruma" : "Tecelão de Rotas"; if (name) name.textContent = merchantName; const offers = Object.values(VEYRA_SHOP_OFFERS).filter((offer) => offer.merchantId === this.activeMerchantId); body.innerHTML = `<header class="merchant-wallet"><span>MARCAS DE VEYRA</span><b>${marks}</b></header><div class="merchant-offers">${offers.map((offer) => { const consumable = CONSUMABLES[offer.consumableId]; const canBuy = marks >= offer.price; return `<article style="--offer:${consumable.accent}"><span>${consumable.glyph}</span><div><strong>${consumable.name}</strong><p>${offer.note}</p><small>${consumable.combatEffect}</small></div><button data-buy-offer="${offer.id}" ${canBuy ? "" : "disabled"}>${offer.price} MARCAS</button></article>`; }).join("")}</div>`; body.querySelectorAll<HTMLButtonElement>("[data-buy-offer]").forEach((button) => button.addEventListener("click", () => this.callbacks.buyConsumable(button.dataset.buyOffer || ""))); }
+  setLanguage(language: GameLanguage) { this.l10n.setLanguage(language); this.root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => { const key = element.dataset.i18n; if (key) element.textContent = this.l10n.ui(key); }); const select = this.root.querySelector<HTMLSelectElement>("#language"); if (select) select.value = language; if (this.activeMerchantId) this.renderShop(this.merchantMarks); }
+  openShop(merchantId: string, marks: number) { this.activeMerchantId = merchantId; this.merchantMarks = marks; this.element("merchant-panel")?.setAttribute("aria-hidden", "false"); this.renderShop(marks); }
+  updateShop(marks: number) { this.merchantMarks = marks; if (this.activeMerchantId) this.renderShop(marks); }
+  private renderShop(marks: number) { const name = this.element("merchant-name"); const intro = this.element("merchant-intro"); const body = this.element("merchant-contents"); if (!body || !this.activeMerchantId) return; const merchantName = this.activeMerchantId === "merchant-apothecary" ? "Boticária da Bruma" : "Tecelão de Rotas"; if (name) name.textContent = this.l10n.text(merchantName); if (intro) intro.textContent = this.l10n.text("Cargas preparadas para quem prefere uma rota curta a uma despedida longa."); const offers = Object.values(VEYRA_SHOP_OFFERS).filter((offer) => offer.merchantId === this.activeMerchantId); body.innerHTML = `<header class="merchant-wallet"><span>${this.l10n.ui("marks")}</span><b>${marks}</b></header><div class="merchant-offers">${offers.map((offer) => { const consumable = CONSUMABLES[offer.consumableId]; const canBuy = marks >= offer.price; return `<article style="--offer:${consumable.accent}"><span>${consumable.glyph}</span><div><strong>${this.l10n.text(consumable.name)}</strong><p>${this.l10n.text(offer.note)}</p><small>${this.l10n.text(consumable.combatEffect)}</small></div><button data-buy-offer="${offer.id}" ${canBuy ? "" : "disabled"}>${offer.price} ${this.l10n.ui("buy")}</button></article>`; }).join("")}</div>`; body.querySelectorAll<HTMLButtonElement>("[data-buy-offer]").forEach((button) => button.addEventListener("click", () => this.callbacks.buyConsumable(button.dataset.buyOffer || ""))); }
   showEnding() { this.element("ending-screen")?.setAttribute("aria-hidden", "false"); }
   update(state: HudState) {
     const health = Math.min(100, Math.max(0, Math.round((state.health / state.maxHealth) * 100))); const energy = Math.min(100, Math.max(0, Math.round((state.energy / state.maxEnergy) * 100)));
@@ -160,7 +166,7 @@ export class UIController {
     if (healthBar) healthBar.style.width = `${health}%`; if (energyBar) energyBar.style.width = `${energy}%`;
     if (this.element("active-name")) this.element("active-name")!.textContent = state.characterName.toUpperCase();
     if (this.element("active-role")) this.element("active-role")!.textContent = state.characterRole.toUpperCase();
-    if (this.element("objective-text")) this.element("objective-text")!.textContent = state.objective;
+    if (this.element("objective-text")) this.element("objective-text")!.textContent = this.l10n.text(state.objective);
     if (this.element("magic-control")) this.element("magic-control")!.textContent = state.active === "kael" ? `CONTROLE ${state.magicControl} · INSTABILIDADE ${state.magicInstability}` : "VIGÍLIA · ENERGIA DOURADA";
     const party = this.element("party-panel"); if (party) party.innerHTML = state.party.map((id, index) => `<span class="${id === state.active ? "active" : ""}"><b>${index + 1}</b>${id === "kael" ? "Kael" : id === "dheren" ? "Dheren" : id === "lyra" ? "Lyra" : "Mira"}</span>`).join("");
     const boss = this.element("boss-card"); if (boss) { boss.classList.toggle("visible", Boolean(state.boss)); if (state.boss) { this.element("boss-name")!.textContent = state.boss.name.toUpperCase(); this.element("boss-bar")!.style.width = `${(state.boss.health / state.boss.maxHealth) * 100}%`; } }
@@ -223,15 +229,15 @@ export class UIController {
   highlightCompleteSets(sets: EquipmentSetProgress[]) { const panel = this.element("equipment-sets"); if (!panel) return; const complete = new Set(sets.filter((set) => set.pieces >= set.required).map((set) => set.id)); panel.querySelectorAll<HTMLElement>(".equipment-set").forEach((node) => { const set = sets.find((entry) => node.textContent?.includes(entry.name)); if (!set) return; const isComplete = complete.has(set.id); node.classList.toggle("complete", isComplete); if (!isComplete) return; const key = `${set.id}:${set.pieces}`; if (this.completedSetKeys.has(key)) return; this.completedSetKeys.add(key); node.classList.remove("awakening"); void node.offsetWidth; node.classList.add("awakening"); const activation = this.element("set-activation"); if (activation) { activation.innerHTML = `<span>✦ CONJUNTO COMPLETO ✦</span><strong>${set.name}</strong><p>${set.pieces} peças sincronizadas · bônus despertados</p>`; activation.classList.add("visible"); window.clearTimeout(this.setActivationTimer); this.setActivationTimer = window.setTimeout(() => activation.classList.remove("visible"), 2600); } this.notify(`Conjunto completo: ${set.name}. Os bônus da coleção despertaram.`); }); this.completedSetKeys.forEach((key) => { if (!Array.from(complete).some((id) => key.startsWith(`${id}:`))) this.completedSetKeys.delete(key); }); }
   private selectInventory(item: string) { const detail = this.element("inventory-detail"); if (!detail) return; const description = item.includes("Marca") ? "Uma marca verde-pálida deixada na Estrada Morta. Lyra a usa para confirmar que a party ainda segue a rota segura." : item.includes("Lenha") ? "Lenha marcada para Darion. O cheiro de resina lembra Ferrosul, mesmo longe da ferraria." : item.includes("Ampola de Bruma") ? "Recompensa do canal. A bruma restaura energia e alonga a esquiva de Mira." : item.includes("Agulha de Cobre") ? "Recompensa da passagem lateral. O cobre fino reforça os golpes básicos de Mira." : item.includes("Selo da Máscara") ? "Prova tomada do Arauto Mascarado. A Guilda dos Caminhos pode reconhecer sua rota de origem." : item.includes("Mapa de Rotas") ? "Registro oficial com atalhos que não constam nas placas de Veyra." : item.includes("Relato do Corredor") ? "Testemunho de uma carga sem nome que atravessou as portas internas da Guilda." : item.includes("Ficha de Rota") ? "Papel rasgado que aponta para uma descida selada sob a Guilda dos Caminhos." : item.includes("Senda Baixa") ? "Sinal de sal e cobre usado por mensageiros para marcar portas subterrâneas." : item.includes("Nó de Mensageiro") ? "Prova que a rede das três chamas atravessa os subterrâneos de Veyra." : "Registro ligado à jornada atual."; detail.innerHTML = `<span>✦</span><h3>${item}</h3><p>${description}</p>`; this.root.querySelectorAll(".inventory-item").forEach((button) => button.classList.toggle("selected", (button as HTMLElement).dataset.item === item)); }
   toggleInventory() { this.toggle("inventory-panel"); }
-  setInteraction(text: string) { const element = this.element("interaction-hint"); if (element) element.textContent = text; }
-  dialogue(speaker: string, text: string) { const card = this.element("dialogue-card"); if (!card) return; const portrait = this.element("dialogue-portrait"); const key = speaker.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" ")[0]; if (portrait) portrait.className = `dialogue-portrait portrait-${["kael", "dheren", "darion", "lyra", "mira"].includes(key) ? key : "kael"}`; this.element("dialogue-speaker")!.textContent = speaker.toUpperCase(); this.element("dialogue-text")!.textContent = text; const choices = this.element("dialogue-choices"); if (choices) choices.innerHTML = ""; card.classList.add("visible"); this.callbacks.speakDialogue(speaker, text); }
+  setInteraction(text: string) { const element = this.element("interaction-hint"); if (element) element.textContent = this.l10n.text(text); }
+  dialogue(speaker: string, text: string) { const card = this.element("dialogue-card"); if (!card) return; const portrait = this.element("dialogue-portrait"); const key = speaker.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" ")[0]; if (portrait) portrait.className = `dialogue-portrait portrait-${["kael", "dheren", "darion", "lyra", "mira"].includes(key) ? key : "kael"}`; this.element("dialogue-speaker")!.textContent = speaker.toUpperCase(); const localized = this.l10n.text(text); this.element("dialogue-text")!.textContent = localized; const choices = this.element("dialogue-choices"); if (choices) choices.innerHTML = ""; card.classList.add("visible"); if (this.l10n.getLanguage() === "pt-BR") this.callbacks.speakDialogue(speaker, text); }
   guildChoice(speaker: string, prompt: string) { this.dialogue(speaker, prompt); const choices = this.element("dialogue-choices"); if (!choices) return; choices.innerHTML = `<button data-guild-choice="mapas">Perguntar pelas rotas apagadas</button><button data-guild-choice="nomes">Perguntar por quem pagou</button>`; choices.querySelectorAll<HTMLButtonElement>("[data-guild-choice]").forEach((button) => button.addEventListener("click", () => { choices.innerHTML = ""; this.callbacks.chooseGuildClue(button.dataset.guildChoice as "mapas" | "nomes"); })); }
   bossWarning(title: string, text: string, tone: "ash" | "mirror") { const warning = this.element("boss-warning"); if (!warning) return; warning.className = `boss-warning visible ${tone}`; this.element("boss-warning-title")!.textContent = title; this.element("boss-warning-text")!.textContent = text; }
   clearBossWarning() { this.element("boss-warning")?.classList.remove("visible"); }
   setStealthState(visible: boolean, active: boolean) { const card = this.element("stealth-card"); if (!card) return; card.classList.toggle("visible", active); card.classList.toggle("alert", visible); if (active) { this.element("stealth-state")!.textContent = visible ? "VISTO" : "OCULTO"; this.element("stealth-detail")!.textContent = visible ? "Os vigias soaram o corredor." : "Fique fora dos cones de luz."; } }
   partyReactions(lines: Array<{ speaker: string; text: string }>) { this.partyReactionTimers.forEach((timer) => window.clearTimeout(timer)); this.partyReactionTimers = lines.map((line, index) => window.setTimeout(() => this.dialogue(line.speaker, line.text), 650 + index * 1250)); }
   clearDialogue() { this.element("dialogue-card")?.classList.remove("visible"); }
-  notify(text: string) { const notice = this.element("rpg-notification"); if (!notice) return; notice.textContent = text; notice.classList.add("visible"); window.clearTimeout(this.notificationTimer); this.notificationTimer = window.setTimeout(() => notice.classList.remove("visible"), 2800); }
+  notify(text: string) { const notice = this.element("rpg-notification"); if (!notice) return; notice.textContent = this.l10n.text(text); notice.classList.add("visible"); window.clearTimeout(this.notificationTimer); this.notificationTimer = window.setTimeout(() => notice.classList.remove("visible"), 2800); }
   toggle(id: string) { const panel = this.element(id); if (!panel) return; panel.getAttribute("aria-hidden") === "false" ? this.close(id) : panel.setAttribute("aria-hidden", "false"); }
   close(id: string) { this.element(id)?.setAttribute("aria-hidden", "true"); }
   toggleDebug() { this.toggle("debug-panel"); }

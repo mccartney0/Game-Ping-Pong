@@ -4,7 +4,7 @@
 - [x] Implementar roda de consumíveis pelo mouse e manter atalhos 5, 6 e 7.
 - [x] Integrar vozes PT-BR substituíveis e reprodução de fala para diálogos canônicos.
 - [x] Reforçar efeitos sonoros de combate, magias, compras e uso de consumíveis.
-- [ ] Estruturar localização PT-BR e inglês para interfaces, comércio e diálogos principais.
+- [x] Estruturar localização PT-BR e inglês para interfaces, comércio e diálogos principais.
 - [ ] Validar comércio, roda, áudio, idioma, save e controles na demonstração de Veyra.
 - [x] Definir consumíveis de combate, quantidades e efeitos do cinto rápido.
 - [x] Implementar três slots equipáveis com persistência e seleção no inventário.
