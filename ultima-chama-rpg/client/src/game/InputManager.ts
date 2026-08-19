@@ -1,10 +1,10 @@
 /**
  * Gravura de Cinzas — entrada semântica para movimento, magia e câmera de terceira pessoa.
  */
-export type GameAction = "forward" | "back" | "left" | "right" | "sprint" | "dodge" | "attack" | "special" | "ability1" | "ability2" | "ultimate" | "interact" | "lock" | "kael" | "dheren" | "lyra" | "mira" | "menu" | "debug";
+export type GameAction = "forward" | "back" | "left" | "right" | "sprint" | "dodge" | "attack" | "special" | "ability1" | "ability2" | "ultimate" | "interact" | "lock" | "kael" | "dheren" | "lyra" | "mira" | "inventory" | "menu" | "debug";
 
 const keyBindings: Record<string, GameAction> = {
-  w: "forward", s: "back", a: "left", d: "right", shift: "sprint", " ": "dodge", q: "ability1", e: "ability2", r: "ultimate", f: "interact", tab: "lock", "1": "kael", "2": "dheren", "3": "lyra", "4": "mira", escape: "menu", f1: "debug",
+  w: "forward", s: "back", a: "left", d: "right", shift: "sprint", " ": "dodge", q: "ability1", e: "ability2", r: "ultimate", f: "interact", tab: "lock", "1": "kael", "2": "dheren", "3": "lyra", "4": "mira", i: "inventory", escape: "menu", f1: "debug",
 };
 
 export class InputManager {

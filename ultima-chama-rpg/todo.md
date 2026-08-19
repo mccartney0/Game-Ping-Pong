@@ -1,0 +1,80 @@
+# Atualização Canônica e Visual
+
+- [x] Definir materiais raros por rota de Veyra e receitas de crafting com efeitos úteis.
+- [x] Implementar nós de coleta, bancada de crafting e materiais persistentes no inventário.
+- [x] Criar missões diárias locais com renovação por data, metas e recompensas rotativas.
+- [x] Adicionar eventos dinâmicos de Veyra ligados a exploração, combate e coleta.
+- [x] Validar crafting, renovação diária local, eventos, recompensas, save e ciclo completo.
+- [x] Criar destaque visual temático para patamares completos de conjuntos no painel.
+- [x] Adicionar animações de entrada e pulsação para a ativação de conjunto completo.
+- [x] Exibir confirmação contextual ao ativar ou trocar um conjunto completo.
+- [x] Validar animações, redução de movimento e leitura visual dos estados de conjunto.
+- [x] Definir coleções de equipamentos e patamares de duas e três peças para a party.
+- [x] Implementar o cálculo de bônus de conjunto junto dos atributos de equipamento existentes.
+- [x] Exibir progresso, peças ativas e atributos extras no painel de equipamentos.
+- [x] Validar bônus de conjunto, melhorias, troca de equipamentos e saves existentes.
+- [x] Definir slots de equipamento e itens iniciais para Kael, Dheren Varenn, Lyra e Mira.
+- [x] Implementar bônus de equipamento em vida, energia, dano, habilidade e furtividade.
+- [x] Criar painel de equipamentos e melhorias integrado ao inventário visual.
+- [x] Persistir equipamentos e melhorias no save local, incluindo compatibilidade com saves anteriores.
+- [x] Validar troca de party, efeitos de combate, interface e persistência do sistema.
+- [x] Construir uma sala secreta selada de Veyra acessível apenas com a Chave de Vigia.
+- [x] Adicionar itens raros e interações de recompensa à sala da Lanterna Velada.
+- [x] Criar missões interativas de reputação para a Lanterna Velada no mercado de Veyra.
+- [x] Implementar armadilhas sonoras na Senda Baixa que alertam vigias próximos.
+- [x] Validar acesso, recompensas, reputação, armadilhas e persistência da ramificação.
+- [x] Criar encontro furtivo na Senda Baixa com campo de visão, alerta e recompensa por passagem limpa.
+- [x] Conectar o Nó do Mensageiro a uma facção de Veyra, com reputação persistente e itens desbloqueáveis.
+- [x] Construir o painel de reputação da facção e registrar os itens liberados no inventário.
+- [x] Adicionar variações de fala de Kael, Dheren, Lyra e Mira ligadas à escolha da Guilda.
+- [x] Validar furtividade, recompensas, reputação, diálogos e salvamento da nova ramificação.
+- [x] Construir uma rota subterrânea secreta desbloqueada pela ficha de rota rasgada.
+- [x] Adicionar desafios interativos de luz, travas e marcas à passagem subterrânea.
+- [x] Implementar escolhas de diálogo na Guilda que revelem pistas alternativas.
+- [x] Criar avisos, telegraphing e efeitos visuais claros para Véu de Cinza e Passo do Espelho.
+- [x] Validar desafios, escolhas, combate e persistência da nova rota.
+- [x] Criar recompensas e itens únicos para as rotas do canal e da passagem lateral de Veyra.
+- [x] Implementar o mini-chefe mascarado dos agentes da coroa com padrões próprios de combate.
+- [x] Construir a Guilda dos Caminhos com NPCs e pontos de investigação interativos.
+- [x] Estender a progressão após a emboscada até a Guilda e suas novas pistas.
+- [x] Validar recompensas, mini-chefe, Guilda dos Caminhos e persistência do progresso.
+- [x] Construir a página investigativa do Grimório com conexão entre pistas, contratos e locais.
+- [x] Adicionar comerciantes interativos ao mercado de Veyra, com diálogos e informações de rota.
+- [x] Criar rotas alternativas de exploração pelo canal, bancas e passagem lateral do mercado.
+- [x] Implementar o evento de combate investigativo contra agentes da coroa cercada por três chamas.
+- [x] Validar o quadro de pistas, interações, combate e salvamento da nova progressão.
+- [x] Definir a conclusão da missão de Mira que a libera como personagem jogável.
+- [x] Implementar Mira controlável, habilidades de ladina e HUD de party após sua missão.
+- [x] Construir o mercado de Veyra, bancas investigáveis e a Casa da Agulha.
+- [x] Criar missões, pistas e itens para investigar o símbolo das três chamas.
+- [x] Validar a progressão de Mira, a exploração de Veyra e a persistência das pistas.
+- [x] Criar e integrar um GLB exclusivo para Lyra, com rig e animações de arco.
+- [x] Mapear as animações exclusivas de espera, deslocamento, disparo e rajada de Lyra às suas habilidades.
+- [x] Construir o painel de inventário visual para Marcas da Estrada Morta e itens da jornada.
+- [x] Introduzir Mira no caminho para Veyra com diálogos, interações e objetivo de quest consistentes com o Livro I.
+- [x] Validar o fluxo de Lyra, inventário, Mira e a rota para Veyra.
+- [x] Criar commits locais no repositório selecionado; o envio remoto segue condicionado à credencial do remoto.
+- [x] Corrigir a inversão dos controles A/D para que a direção lateral siga a câmera de forma intuitiva.
+- [x] Integrar Lyra como personagem jogável, com modelo, HUD, habilidades de arco e falas contextuais.
+- [x] Criar a área explorável da Estrada Morta com inimigos, itens coletáveis e progressão própria.
+- [x] Adicionar efeitos visuais de impacto, partículas e feedback sonoro às habilidades e aos golpes corpo a corpo.
+- [x] Validar troca de party, controles, coleta, combate e navegação pela Estrada Morta.
+- [x] Corrigir a orientação de Kael e Dheren para que a frente visual corresponda ao vetor de movimento.
+- [x] Selecionar, converter e integrar um GLB de criatura licenciado para o Rastreador de Sangue.
+- [x] Vincular animações de ataque, deslocamento, dano e morte aos modelos de party e inimigos.
+- [x] Criar retratos de Kael, Dheren, Darion e personagens de Elwen no painel de diálogo.
+- [x] Construir a transição para Elwen com novas quests, objetivos, combate e diálogos derivados do Livro I.
+- [x] Testar controles, câmera, animações, retratos e progressão até Elwen.
+- [x] Verificar se o novo DOCX integral contém Livro I, Livro II ou uma compilação dos dois antes de fundir seus dados ao cânone do slice.
+- [x] Inventariar o Livro I completo e atualizar o mapa de capítulos, locais, personagens, relações e eventos de Ferrosul.
+- [x] Aplicar a nomenclatura exclusiva Dheren Varenn a todos os extratos canônicos incorporados do Livro I.
+- [ ] Localizar o DOCX canônico em arquivos enviados ou solicitar o upload caso esteja ausente.
+- [x] Inventariar o DOCX recebido de Livro II, capítulos 1 a 24, e separar conteúdo utilizável sem antecipar eventos no slice de Livro I.
+- [x] Normalizar globalmente a nomenclatura canônica para Dheren e Dheren Varenn nos extratos, dados e diálogos integrados.
+- [x] Extrair capítulos, personagens, lugares, regras de magia e falas relevantes do manuscrito fornecido.
+- [x] Atualizar `docs/LORE_CANON.md` e os dados narrativos do jogo, preservando a regra global Dheren Varenn.
+- [x] Revisar os diálogos do treino, Darion, Raposa Vermelha e ataque de Ferrosul com base na voz canônica do texto fornecido.
+- [x] Selecionar modelos GLB licenciados para Kael, Dheren, construções-chave, árvores e Rastreador de Sangue.
+- [x] Otimizar, armazenar externamente e integrar carregamento sob demanda dos GLBs prioritários.
+- [ ] Validar carregamento, controles, save, performance e ausência de erros de console.
+- [ ] Sincronizar a atualização com o repositório GitHub e criar checkpoint final.

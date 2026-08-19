@@ -9,7 +9,7 @@ const KEY = "ferrosul-slot-1";
 
 export const defaultSave = (): SaveData => ({
   version: 1, chapter: "Ato I — Ferrosul", narrativeStage: "title", activeQuest: "training", activeCharacter: "kael", party: ["kael", "dheren"], magicControl: 20, magicInstability: 0,
-  inventory: [], codexEntries: ["Ferrosul", "Dheren Varenn", "Centelha Azul"], unlockedAbilities: ["blue-spark", "impulse", "astral-strike", "ethereal-step"], settings: { difficulty: "Aventura", reducedMotion: false }, savedAt: Date.now(),
+  inventory: ["Foco da Centelha Azul", "Guarda Dourada de Dheren", "Fragmento de Cinza Lapidada", "Fragmento de Cinza Lapidada", "Fragmento de Cinza Lapidada"], codexEntries: ["Ferrosul", "Dheren Varenn", "Centelha Azul"], investigationLinks: [], guildChoice: null, underwaysChallenges: [], underwaysStealth: "pending", lanternReputation: 0, lanternFactionUnlocked: false, lanternMissions: [], soundTrapsTriggered: [], equippedItems: { kael: { reliquia: "kael-focus" }, dheren: { traje: "dheren-guard" }, lyra: {}, mira: {} }, equipmentUpgrades: {}, upgradeTokens: 3, materials: { "sal-da-senda": 0, "cobre-afogado": 0, "cinza-lunar": 0, "semente-bruma": 0 }, collectedMaterialNodes: [], craftedRecipes: [], dailyCycleKey: "", dailyMissions: [], dynamicEvent: { id: "", title: "", objective: "", kind: "combat", active: false, completed: false }, unlockedAbilities: ["blue-spark", "impulse", "astral-strike", "ethereal-step"], settings: { difficulty: "Aventura", reducedMotion: false }, savedAt: Date.now(),
 });
 
 export class SaveManager {

@@ -64,3 +64,5 @@ O logotipo combina uma chama azul estilizada dentro de um anel rúnico incomplet
 1. A primeira viewport é sempre uma crônica material: contém marca rúnica, enquadramento de pergaminho/gravura e um acento de chama, sem se resolver em um vazio escuro.
 2. **Azul Última-Chama — #62C9FF** permanece raro e funcional, reservado para Kael, runas e convites primários; ouro pertence à proteção e ao controle associados a Dheren.
 3. O menu é uma página de grimório aberta sobre Ferrosul; o estado de demonstração é um palco de mundo em chamas, acompanhado por missão, party e diálogo em linguagem de crônica.
+4. O wordmark sempre ganha sublinhado gravado, coroa de cinzas quebrada e anel de chama incompleto; a tipografia isolada nunca carrega a identidade sozinha.
+5. A HUD usa bordas de pergaminho e cabeçalhos de vigília para manter a função de jogo sem perder o caráter de instrumento de crônica.
