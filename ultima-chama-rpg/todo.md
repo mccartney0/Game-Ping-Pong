@@ -1,5 +1,8 @@
 # Atualização Canônica e Visual
 
+- [x] Criar volumes individuais persistentes para voz, efeitos e música.
+- [x] Reorganizar o menu de pausa em abas de jogo, áudio e acessibilidade.
+- [x] Validar controles de volume, abas, persistência e leitura visual em Veyra.
 - [x] Definir vozes naturais distintas e arquivos substituíveis para cada personagem.
 - [x] Criar opções persistentes de narração, legendas de diálogo e legendas de ações.
 - [x] Sincronizar a duração de falas e o fechamento automático de diálogos e avisos de ação.
