@@ -33,6 +33,8 @@ export interface UICallbacks {
   craftRecipe: (recipeId: string) => void;
   equipQuickBelt: (slot: number, consumableId: ConsumableId) => void;
   buyConsumable: (offerId: string) => void;
+  speakDialogue: (speaker: string, text: string) => void;
+  previewVoice: (speaker: string) => void;
   debugAction: (action: string) => void;
 }
 
@@ -116,7 +118,7 @@ export class UIController {
         <button class="close-panel" data-close="pause-panel">×</button><p class="eyebrow">CRÔNICA EM PAUSA</p><h2>Fogo guardado</h2>
         <button class="rpg-button primary" id="save-game">Salvar no grimório</button>
         <label>Dificuldade<select id="difficulty"><option>Historia</option><option selected>Aventura</option><option>Veterano</option><option>Lendario</option></select></label>
-        <p>O jogo é salvo localmente neste navegador.</p>
+        <p>O jogo é salvo localmente neste navegador.</p><section class="voice-settings"><header><span>VOZES DE CENA · PT-BR</span><b>SUBSTITUÍVEIS</b></header><p>As falas são narradas em PT-BR. Use as prévias para ouvir as assinaturas de voz; arquivos futuros podem substituir estes perfis.</p><div><button data-preview-voice="Kael">Kael</button><button data-preview-voice="Dheren Varenn">Dheren Varenn</button><button data-preview-voice="Lyra">Lyra</button><button data-preview-voice="Mira">Mira</button></div></section>
       </section>
       <section class="parchment-panel inventory-panel" id="inventory-panel" aria-hidden="true">
         <button class="close-panel" data-close="inventory-panel">×</button><p class="eyebrow">BOLSA DE JORNADA</p><h2>Inventário</h2>
@@ -142,6 +144,7 @@ export class UIController {
     this.root.querySelectorAll<HTMLButtonElement>("[data-close]").forEach((button) => button.addEventListener("click", () => this.close(button.dataset.close || "")));
     this.root.querySelector<HTMLSelectElement>("#difficulty")?.addEventListener("change", (event) => this.callbacks.changeDifficulty((event.currentTarget as HTMLSelectElement).value as "Historia" | "Aventura" | "Veterano" | "Lendario"));
     this.root.querySelectorAll<HTMLButtonElement>("[data-debug]").forEach((button) => button.addEventListener("click", () => this.callbacks.debugAction(button.dataset.debug || "")));
+    this.root.querySelectorAll<HTMLButtonElement>("[data-preview-voice]").forEach((button) => button.addEventListener("click", () => this.callbacks.previewVoice(button.dataset.previewVoice || "Kael")));
     this.root.querySelectorAll<HTMLButtonElement>("[data-grimoire-tab]").forEach((button) => button.addEventListener("click", () => this.showGrimoireTab(button.dataset.grimoireTab || "journey")));
   }
   private element<T extends HTMLElement>(id: string) { return this.root.querySelector<T>(`#${id}`); }
@@ -221,7 +224,7 @@ export class UIController {
   private selectInventory(item: string) { const detail = this.element("inventory-detail"); if (!detail) return; const description = item.includes("Marca") ? "Uma marca verde-pálida deixada na Estrada Morta. Lyra a usa para confirmar que a party ainda segue a rota segura." : item.includes("Lenha") ? "Lenha marcada para Darion. O cheiro de resina lembra Ferrosul, mesmo longe da ferraria." : item.includes("Ampola de Bruma") ? "Recompensa do canal. A bruma restaura energia e alonga a esquiva de Mira." : item.includes("Agulha de Cobre") ? "Recompensa da passagem lateral. O cobre fino reforça os golpes básicos de Mira." : item.includes("Selo da Máscara") ? "Prova tomada do Arauto Mascarado. A Guilda dos Caminhos pode reconhecer sua rota de origem." : item.includes("Mapa de Rotas") ? "Registro oficial com atalhos que não constam nas placas de Veyra." : item.includes("Relato do Corredor") ? "Testemunho de uma carga sem nome que atravessou as portas internas da Guilda." : item.includes("Ficha de Rota") ? "Papel rasgado que aponta para uma descida selada sob a Guilda dos Caminhos." : item.includes("Senda Baixa") ? "Sinal de sal e cobre usado por mensageiros para marcar portas subterrâneas." : item.includes("Nó de Mensageiro") ? "Prova que a rede das três chamas atravessa os subterrâneos de Veyra." : "Registro ligado à jornada atual."; detail.innerHTML = `<span>✦</span><h3>${item}</h3><p>${description}</p>`; this.root.querySelectorAll(".inventory-item").forEach((button) => button.classList.toggle("selected", (button as HTMLElement).dataset.item === item)); }
   toggleInventory() { this.toggle("inventory-panel"); }
   setInteraction(text: string) { const element = this.element("interaction-hint"); if (element) element.textContent = text; }
-  dialogue(speaker: string, text: string) { const card = this.element("dialogue-card"); if (!card) return; const portrait = this.element("dialogue-portrait"); const key = speaker.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" ")[0]; if (portrait) portrait.className = `dialogue-portrait portrait-${["kael", "dheren", "darion", "lyra", "mira"].includes(key) ? key : "kael"}`; this.element("dialogue-speaker")!.textContent = speaker.toUpperCase(); this.element("dialogue-text")!.textContent = text; const choices = this.element("dialogue-choices"); if (choices) choices.innerHTML = ""; card.classList.add("visible"); }
+  dialogue(speaker: string, text: string) { const card = this.element("dialogue-card"); if (!card) return; const portrait = this.element("dialogue-portrait"); const key = speaker.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(" ")[0]; if (portrait) portrait.className = `dialogue-portrait portrait-${["kael", "dheren", "darion", "lyra", "mira"].includes(key) ? key : "kael"}`; this.element("dialogue-speaker")!.textContent = speaker.toUpperCase(); this.element("dialogue-text")!.textContent = text; const choices = this.element("dialogue-choices"); if (choices) choices.innerHTML = ""; card.classList.add("visible"); this.callbacks.speakDialogue(speaker, text); }
   guildChoice(speaker: string, prompt: string) { this.dialogue(speaker, prompt); const choices = this.element("dialogue-choices"); if (!choices) return; choices.innerHTML = `<button data-guild-choice="mapas">Perguntar pelas rotas apagadas</button><button data-guild-choice="nomes">Perguntar por quem pagou</button>`; choices.querySelectorAll<HTMLButtonElement>("[data-guild-choice]").forEach((button) => button.addEventListener("click", () => { choices.innerHTML = ""; this.callbacks.chooseGuildClue(button.dataset.guildChoice as "mapas" | "nomes"); })); }
   bossWarning(title: string, text: string, tone: "ash" | "mirror") { const warning = this.element("boss-warning"); if (!warning) return; warning.className = `boss-warning visible ${tone}`; this.element("boss-warning-title")!.textContent = title; this.element("boss-warning-text")!.textContent = text; }
   clearBossWarning() { this.element("boss-warning")?.classList.remove("visible"); }
