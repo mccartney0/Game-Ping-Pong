@@ -2,7 +2,7 @@
  * Gravura de Cinzas — conteúdo configurável do vertical slice.
  * Use estes dados para manter personagens e combate coerentes com o cânone disponível.
  */
-import type { CharacterDefinition, CraftRecipeDefinition, EnemyDefinition, EquipmentDefinition, EquipmentSetDefinition, QuestDefinition } from "./types";
+import type { CharacterDefinition, ConsumableDefinition, CraftRecipeDefinition, EnemyDefinition, EquipmentDefinition, EquipmentSetDefinition, QuestDefinition } from "./types";
 
 export const CHARACTERS: Record<string, CharacterDefinition> = {
   kael: {
@@ -80,6 +80,12 @@ export const CRAFT_RECIPES: Record<string, CraftRecipeDefinition> = {
   "bruma-guardada": { id: "bruma-guardada", name: "Ampola de Bruma Guardada", description: "Condensa a bruma do canal em uma esquiva restauradora.", materials: { "semente-bruma": 2, "cobre-afogado": 1 }, result: "Ampola de Bruma Guardada", resultDescription: "Restaura energia e reforça a próxima esquiva de Mira." },
   "sal-do-vigia": { id: "sal-do-vigia", name: "Sal do Vigia", description: "Uma mistura que torna a trilha menos legível aos inimigos.", materials: { "sal-da-senda": 2, "cinza-lunar": 1 }, result: "Sal do Vigia", resultDescription: "Concede um Fragmento de Cinza Lapidada para melhorias." },
   "fio-de-veyra": { id: "fio-de-veyra", name: "Fio de Veyra", description: "Cobre e cinza trançados para selar uma rota silenciosa.", materials: { "cobre-afogado": 2, "cinza-lunar": 2 }, result: "Fio de Veyra", resultDescription: "Eleva a reputação da Lanterna Velada." },
+};
+
+export const CONSUMABLES: Record<string, ConsumableDefinition> = {
+  "bruma-guardada": { id: "bruma-guardada", name: "Ampola de Bruma Guardada", description: "Bruma condensada do canal que devolve fôlego e torna a próxima esquiva mais longa.", combatEffect: "Recupera energia e amplifica esquivas por alguns segundos.", accent: "#76c9cf", glyph: "◌" },
+  "sal-do-vigia": { id: "sal-do-vigia", name: "Sal do Vigia", description: "Sal da Senda misturado a cinza lunar, espalhado como uma proteção discreta.", combatEffect: "Reduz o dano recebido durante uma breve vigília.", accent: "#e8c977", glyph: "✦" },
+  "fio-de-veyra": { id: "fio-de-veyra", name: "Fio de Veyra", description: "Cobre e cinza trançados no silêncio das rotas veladas.", combatEffect: "Potencializa dano de habilidade por alguns segundos.", accent: "#bf7bd0", glyph: "⌁" },
 };
 
 export const QUESTS: Record<string, QuestDefinition> = {

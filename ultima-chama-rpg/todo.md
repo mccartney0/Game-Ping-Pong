@@ -1,5 +1,9 @@
 # Atualização Canônica e Visual
 
+- [x] Definir consumíveis de combate, quantidades e efeitos do cinto rápido.
+- [x] Implementar três slots equipáveis com persistência e seleção no inventário.
+- [x] Adicionar atalhos de teclado e feedback visual e sonoro durante o uso.
+- [x] Validar consumíveis em combate e eventos dinâmicos, incluindo salvamento.
 - [x] Definir materiais raros por rota de Veyra e receitas de crafting com efeitos úteis.
 - [x] Implementar nós de coleta, bancada de crafting e materiais persistentes no inventário.
 - [x] Criar missões diárias locais com renovação por data, metas e recompensas rotativas.

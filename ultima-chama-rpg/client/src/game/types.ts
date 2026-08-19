@@ -83,6 +83,17 @@ export interface CraftRecipeDefinition {
   resultDescription: string;
 }
 
+export type ConsumableId = "bruma-guardada" | "sal-do-vigia" | "fio-de-veyra";
+
+export interface ConsumableDefinition {
+  id: ConsumableId;
+  name: string;
+  description: string;
+  combatEffect: string;
+  accent: string;
+  glyph: string;
+}
+
 export interface DailyMissionState {
   id: string;
   type: "collect" | "craft" | "event";
@@ -143,6 +154,8 @@ export interface SaveData {
   equipmentUpgrades: Record<string, number>;
   upgradeTokens: number;
   materials: Record<string, number>;
+  consumableCounts: Record<ConsumableId, number>;
+  quickBelt: Array<ConsumableId | null>;
   collectedMaterialNodes: string[];
   craftedRecipes: string[];
   dailyCycleKey: string;
