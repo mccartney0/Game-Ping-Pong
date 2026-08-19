@@ -2,7 +2,7 @@
  * Gravura de Cinzas — conteúdo configurável do vertical slice.
  * Use estes dados para manter personagens e combate coerentes com o cânone disponível.
  */
-import type { CharacterDefinition, ConsumableDefinition, CraftRecipeDefinition, EnemyDefinition, EquipmentDefinition, EquipmentSetDefinition, QuestDefinition } from "./types";
+import type { CharacterDefinition, ConsumableDefinition, CraftRecipeDefinition, EnemyDefinition, EquipmentDefinition, EquipmentSetDefinition, QuestDefinition, ShopOffer } from "./types";
 
 export const CHARACTERS: Record<string, CharacterDefinition> = {
   kael: {
@@ -86,6 +86,13 @@ export const CONSUMABLES: Record<string, ConsumableDefinition> = {
   "bruma-guardada": { id: "bruma-guardada", name: "Ampola de Bruma Guardada", description: "Bruma condensada do canal que devolve fôlego e torna a próxima esquiva mais longa.", combatEffect: "Recupera energia e amplifica esquivas por alguns segundos.", accent: "#76c9cf", glyph: "◌" },
   "sal-do-vigia": { id: "sal-do-vigia", name: "Sal do Vigia", description: "Sal da Senda misturado a cinza lunar, espalhado como uma proteção discreta.", combatEffect: "Reduz o dano recebido durante uma breve vigília.", accent: "#e8c977", glyph: "✦" },
   "fio-de-veyra": { id: "fio-de-veyra", name: "Fio de Veyra", description: "Cobre e cinza trançados no silêncio das rotas veladas.", combatEffect: "Potencializa dano de habilidade por alguns segundos.", accent: "#bf7bd0", glyph: "⌁" },
+};
+
+export const VEYRA_SHOP_OFFERS: Record<string, ShopOffer> = {
+  "apothecary-bruma": { id: "apothecary-bruma", merchantId: "merchant-apothecary", consumableId: "bruma-guardada", price: 3, note: "Bruma do canal, selada para combate." },
+  "apothecary-sal": { id: "apothecary-sal", merchantId: "merchant-apothecary", consumableId: "sal-do-vigia", price: 4, note: "Sal fino para atravessar uma troca de golpes." },
+  "thread-fio": { id: "thread-fio", merchantId: "merchant-thread", consumableId: "fio-de-veyra", price: 5, note: "Fio runado para uma habilidade decisiva." },
+  "thread-bruma": { id: "thread-bruma", merchantId: "merchant-thread", consumableId: "bruma-guardada", price: 4, note: "Uma ampola extra para a rota mais longa." },
 };
 
 export const QUESTS: Record<string, QuestDefinition> = {

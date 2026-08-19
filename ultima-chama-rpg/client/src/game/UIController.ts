@@ -1,7 +1,7 @@
 /**
  * Gravura de Cinzas — HUD discreto de pergaminho e cinza; o mundo 3D continua dominante.
  */
-import { CONSUMABLES, CRAFT_RECIPES, EQUIPMENT, MATERIALS } from "./data";
+import { CONSUMABLES, CRAFT_RECIPES, EQUIPMENT, MATERIALS, VEYRA_SHOP_OFFERS } from "./data";
 import type { CharacterId, ConsumableId, DailyMissionState, DynamicEventState, EquipmentSetProgress, EquipmentSlot, NarrativeStage } from "./types";
 
 export interface HudState {
@@ -32,6 +32,7 @@ export interface UICallbacks {
   upgradeEquipment: (itemId: string) => void;
   craftRecipe: (recipeId: string) => void;
   equipQuickBelt: (slot: number, consumableId: ConsumableId) => void;
+  buyConsumable: (offerId: string) => void;
   debugAction: (action: string) => void;
 }
 
@@ -47,6 +48,7 @@ export class UIController {
   private setActivationTimer = 0;
   private craftingFingerprint = "";
   private beltFingerprint = "";
+  private activeMerchantId = "";
   private readonly evidence = [
     { id: "market", title: "Mercado de Veyra", type: "LOCAL", description: "Bancas fechadas às pressas e vendedores que só falam quando a multidão muda de rumo." },
     { id: "contract", title: "Contrato das Três Chamas", type: "DOCUMENTO", description: "A marca liga compra de relíquias, nomes riscados e pagamentos sem origem." },
@@ -120,6 +122,9 @@ export class UIController {
         <button class="close-panel" data-close="inventory-panel">×</button><p class="eyebrow">BOLSA DE JORNADA</p><h2>Inventário</h2>
         <p class="inventory-hint">Selecione um item para registrar sua utilidade na crônica.</p><section class="crafting-board" id="crafting-board"></section><div class="equipment-header"><span>ARMAS E MELHORIAS</span><b id="upgrade-tokens">FRAGMENTOS 0</b></div><div class="equipment-slots" id="equipment-slots"></div><div class="equipment-sets" id="equipment-sets"></div><div class="equipment-catalog" id="equipment-catalog"></div><div class="inventory-grid" id="inventory-grid"></div><article class="inventory-detail" id="inventory-detail"><span>✦</span><h3>Nenhum item selecionado</h3><p>As Marcas da Estrada Morta aparecem aqui depois de recolhidas.</p></article>
       </section>
+      <section class="parchment-panel merchant-panel" id="merchant-panel" aria-hidden="true">
+        <button class="close-panel" data-close="merchant-panel">×</button><p class="eyebrow">COMÉRCIO DE VEYRA</p><h2 id="merchant-name">Banca de Rotas</h2><p class="merchant-intro">Cargas preparadas para quem prefere uma rota curta a uma despedida longa.</p><div id="merchant-contents"></div>
+      </section>
       <section class="debug-panel" id="debug-panel" aria-hidden="true"><strong>F1 · VIGÍLIA DO DESENVOLVEDOR</strong><div><button data-debug="heal">Curar</button><button data-debug="spawn">Invocar inimigo</button><button data-debug="kill">Eliminar inimigos</button><button data-debug="attack">Saltar para ataque</button><button data-debug="kael">Kael</button><button data-debug="dheren">Dheren</button></div></section>
       <section class="ending-screen" id="ending-screen" aria-hidden="true"><div><p class="eyebrow">CAPÍTULO SEGUINTE LIBERADO</p><h2>A CHAMA<br/>DO ÚLTIMO REINO</h2><p>Ferrosul arde atrás deles. Em Elwen, uma arqueira observa a estrada morta.</p><button class="rpg-button primary" id="ending-menu">Voltar ao grimório</button></div></section>
     `;
@@ -142,6 +147,9 @@ export class UIController {
   private element<T extends HTMLElement>(id: string) { return this.root.querySelector<T>(`#${id}`); }
   showTitle() { this.element("title-screen")?.classList.remove("hidden"); this.element("ending-screen")?.setAttribute("aria-hidden", "true"); }
   beginGame() { this.element("title-screen")?.classList.add("hidden"); this.element("rpg-hud")?.classList.add("visible"); }
+  openShop(merchantId: string, marks: number) { this.activeMerchantId = merchantId; this.element("merchant-panel")?.setAttribute("aria-hidden", "false"); this.renderShop(marks); }
+  updateShop(marks: number) { if (this.activeMerchantId) this.renderShop(marks); }
+  private renderShop(marks: number) { const name = this.element("merchant-name"); const body = this.element("merchant-contents"); if (!body || !this.activeMerchantId) return; const merchantName = this.activeMerchantId === "merchant-apothecary" ? "Boticária da Bruma" : "Tecelão de Rotas"; if (name) name.textContent = merchantName; const offers = Object.values(VEYRA_SHOP_OFFERS).filter((offer) => offer.merchantId === this.activeMerchantId); body.innerHTML = `<header class="merchant-wallet"><span>MARCAS DE VEYRA</span><b>${marks}</b></header><div class="merchant-offers">${offers.map((offer) => { const consumable = CONSUMABLES[offer.consumableId]; const canBuy = marks >= offer.price; return `<article style="--offer:${consumable.accent}"><span>${consumable.glyph}</span><div><strong>${consumable.name}</strong><p>${offer.note}</p><small>${consumable.combatEffect}</small></div><button data-buy-offer="${offer.id}" ${canBuy ? "" : "disabled"}>${offer.price} MARCAS</button></article>`; }).join("")}</div>`; body.querySelectorAll<HTMLButtonElement>("[data-buy-offer]").forEach((button) => button.addEventListener("click", () => this.callbacks.buyConsumable(button.dataset.buyOffer || ""))); }
   showEnding() { this.element("ending-screen")?.setAttribute("aria-hidden", "false"); }
   update(state: HudState) {
     const health = Math.min(100, Math.max(0, Math.round((state.health / state.maxHealth) * 100))); const energy = Math.min(100, Math.max(0, Math.round((state.energy / state.maxEnergy) * 100)));

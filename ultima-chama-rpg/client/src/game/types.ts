@@ -94,6 +94,14 @@ export interface ConsumableDefinition {
   glyph: string;
 }
 
+export interface ShopOffer {
+  id: string;
+  merchantId: "merchant-apothecary" | "merchant-thread";
+  consumableId: ConsumableId;
+  price: number;
+  note: string;
+}
+
 export interface DailyMissionState {
   id: string;
   type: "collect" | "craft" | "event";
@@ -154,6 +162,7 @@ export interface SaveData {
   equipmentUpgrades: Record<string, number>;
   upgradeTokens: number;
   materials: Record<string, number>;
+  veyraMarks: number;
   consumableCounts: Record<ConsumableId, number>;
   quickBelt: Array<ConsumableId | null>;
   collectedMaterialNodes: string[];
