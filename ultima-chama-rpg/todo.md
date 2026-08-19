@@ -1,5 +1,7 @@
 # Atualização Canônica e Visual
 
+- [x] Adicionar modal de confirmação e cancelamento antes da restauração global.
+- [x] Validar foco, confirmação, cancelamento e visual do modal de proteção.
 - [x] Adicionar restauração global de padrões para jogo, áudio e acessibilidade.
 - [x] Validar atualização imediata, persistência e leitura visual do botão de restauração.
 - [x] Criar volumes individuais persistentes para voz, efeitos e música.
