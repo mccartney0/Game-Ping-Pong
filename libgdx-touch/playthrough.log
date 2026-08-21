@@ -1,4 +1,5 @@
 menu main/modes/help/settings/pause=OK
+versus powers=2 topPowerUp=MULTI multiplier=2
 survival lives=2
 campaign bosses=4 complete=true
 powers overdrive/shield/wide=OK

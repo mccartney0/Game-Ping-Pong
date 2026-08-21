@@ -273,11 +273,14 @@ public class PingPongTouchGame extends ApplicationAdapter {
                 TouchPongWorld.WIDTH / 2f, TouchPongWorld.HEIGHT - 0.42f, true);
         drawText(world.getModeLabel() + "  |  " + world.getProgressLabel(),
                 0.7f, TouchPongWorld.HEIGHT - 0.42f, false);
-        drawText("ENERGY " + Math.round(world.getEnergy(PaddleSide.BOTTOM))
+        drawText("P1 ENERGY " + Math.round(world.getEnergy(PaddleSide.BOTTOM))
                 + "  " + world.getAbilityLabel(PaddleSide.BOTTOM),
                 0.7f, 0.33f, false);
-        drawText("DOUBLE TAP = POWER  |  TOP LEFT = PAUSE",
+        drawText("P2 ENERGY " + Math.round(world.getEnergy(PaddleSide.TOP))
+                + "  " + world.getAbilityLabel(PaddleSide.TOP),
                 TouchPongWorld.WIDTH - 0.7f, 0.33f, true);
+        drawText("DOUBLE TAP = POWER  |  EDGE TAP = CYCLE  |  CENTER = COLLECT",
+                TouchPongWorld.WIDTH / 2f, 0.82f, true);
         if (!"READY".equals(world.getLastEvent())) {
             font.setColor(new Color(1f, 0.84f, 0.35f, 1f));
             drawText(world.getLastEvent(), TouchPongWorld.WIDTH / 2f,

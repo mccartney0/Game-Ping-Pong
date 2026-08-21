@@ -149,6 +149,36 @@ public class TouchPlaythrough {
         log.append("menu main/modes/help/settings/pause=OK\n");
     }
 
+    private static void exerciseVersus(Viewport viewport, StringBuilder log) {
+        TouchPongWorld versus = new TouchPongWorld();
+        versus.setMode(MobileGameMode.VERSUS);
+        PaddleTouchInput input = new PaddleTouchInput(viewport, versus);
+        int bottomX = screenX(viewport, versus.playerX, versus.playerY);
+        int bottomY = screenY(viewport, versus.playerX, versus.playerY);
+        int topX = screenX(viewport, versus.enemyX, versus.enemyY);
+        int topY = screenY(viewport, versus.enemyX, versus.enemyY);
+
+        tap(input, bottomX, bottomY, 0);
+        input.update(0.08f);
+        tap(input, bottomX, bottomY, 0);
+        tap(input, topX, topY, 1);
+        input.update(0.08f);
+        tap(input, topX, topY, 1);
+        check(versus.playerAbilityActivations == 1, "Versus poder bottom");
+        check(versus.enemyAbilityActivations == 1, "Versus poder top");
+
+        int edgeX = screenX(viewport, 0.5f, versus.enemyY);
+        int edgeY = screenY(viewport, 0.5f, versus.enemyY);
+        tap(input, edgeX, edgeY, 2);
+        check(versus.getAbility(PaddleSide.TOP) == AbilityType.WIDE,
+                "Versus troca poder top");
+        versus.spawnPowerUpAt(versus.enemyX, versus.enemyY, PowerUpType.MULTI);
+        versus.update(0.01f);
+        check(versus.powerUpsCollected == 1, "Versus coleta power-up top");
+        check(versus.enemyPointMultiplier == 2, "Versus multiplicador top");
+        log.append("versus powers=2 topPowerUp=MULTI multiplier=2\n");
+    }
+
     private static void exerciseCampaignAndSurvival(StringBuilder log) {
         TouchPongWorld survival = new TouchPongWorld();
         survival.setMode(MobileGameMode.SURVIVAL);
@@ -177,6 +207,7 @@ public class TouchPlaythrough {
         StringBuilder log = new StringBuilder();
 
         exerciseMenu(world, log);
+        exerciseVersus(viewport, log);
         exerciseCampaignAndSurvival(log);
         world.setMode(MobileGameMode.MUTANT);
         world.spawnPowerUpAt(world.playerX, world.playerY, PowerUpType.SPLIT);
