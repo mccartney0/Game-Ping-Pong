@@ -7,5 +7,6 @@ public class TouchGestureConfig {
     public float topHalfThresholdWorld = 6.0f;
     public float bottomAbilityZone = 0.18f;
     public float sideAbilityZone = 0.22f;
+    public float abilityCycleZoneWorld = 1.6f;
     public boolean allowTopPlayer = true;
 }

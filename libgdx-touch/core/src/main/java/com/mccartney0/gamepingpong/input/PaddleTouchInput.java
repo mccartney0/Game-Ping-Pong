@@ -64,6 +64,10 @@ public class PaddleTouchInput extends InputAdapter {
             return false;
         }
         Vector3 point = unproject(screenX, screenY);
+        if (isAbilityCycleZone(point.x)) {
+            target.cycleAbility(side);
+            return true;
+        }
         PointerState state = new PointerState(side, point.x, point.y);
         pointers.put(pointer, state);
 
@@ -134,6 +138,11 @@ public class PaddleTouchInput extends InputAdapter {
         float dy = y - previousPoint.y;
         return elapsedSeconds - previousTime <= config.doubleTapWindowSeconds
                 && dx * dx + dy * dy <= config.doubleTapSlopWorld * config.doubleTapSlopWorld;
+    }
+
+    private boolean isAbilityCycleZone(float worldX) {
+        return worldX <= config.abilityCycleZoneWorld
+                || worldX >= viewport.getWorldWidth() - config.abilityCycleZoneWorld;
     }
 
     private PaddleSide sideForScreenPoint(int screenX, int screenY) {

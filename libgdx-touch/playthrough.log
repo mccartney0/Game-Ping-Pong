@@ -1,11 +1,17 @@
-t=0.00 score=0:0 ball=(8.10,6.07) event=READY
+menu main/modes/help/settings/pause=OK
+survival lives=2
+campaign bosses=4 complete=true
+powers overdrive/shield/wide=OK
+classic energy power-up collected=1
+edge ability cycle=SHIELD
+t=0.00 score=0:0 ball=(8.11,6.09) event=PLAYER SHIELD
 t=0.33 double-tap bottom ability=1
 t=0.67 double-tap top ability=2
-t=2.00 score=0:0 ball=(15.16,4.59) event=WALL HIT
-t=4.00 score=1:0 ball=(8.07,6.06) event=PLAYER POINT
-t=6.00 score=2:0 ball=(8.65,6.53) event=PLAYER POINT
-t=8.00 score=2:0 ball=(13.90,6.20) event=TOP HIT
-t=10.00 score=2:0 ball=(14.13,7.59) event=PLAYER HIT
-t=12.00 score=3:0 ball=(12.87,9.97) event=PLAYER POINT
-t=14.00 score=3:0 ball=(14.09,1.78) event=PLAYER HIT
-final score=3:0 drags=898/898 doubleTapAbilities=2 pauseToggles=2 event=RESUMED
+t=2.00 score=0:0 ball=(13.91,6.95) event=TOP HIT
+t=4.00 score=0:0 ball=(14.10,6.83) event=POWER ENERGY
+t=6.00 score=0:0 ball=(12.30,9.50) event=TOP SHIELD BREAK
+t=8.00 score=0:0 ball=(14.08,1.42) event=TOP HIT
+t=10.00 score=0:0 ball=(14.16,12.45) event=PLAYER HIT
+t=12.00 score=2:0 ball=(8.50,6.41) event=PLAYER POINT
+t=14.00 score=2:0 ball=(13.90,6.39) event=TOP HIT
+final score=2:0 drags=898/898 doubleTapAbilities=2 pauseToggles=2 powerUps=3/1 event=RESUMED

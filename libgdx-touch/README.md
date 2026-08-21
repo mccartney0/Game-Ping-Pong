@@ -26,14 +26,16 @@ libgdx-touch/
 |---|---|
 | Arrastar na metade inferior | Move a raquete do jogador 1. |
 | Arrastar na metade superior | Move a raquete do jogador 2 ou o adversário de teste. |
-| Toque duplo na metade inferior | Ativa a habilidade do jogador 1. |
-| Toque duplo na metade superior | Ativa a habilidade do jogador 2. |
+| Toque duplo na metade inferior | Ativa o poder selecionado do jogador 1. |
+| Toque duplo na metade superior | Ativa o poder do jogador 2 ou do adversário de teste. |
+| Toque nas bordas esquerda/direita | Troca entre `OVERDRIVE`, `SHIELD` e `WIDE` na metade tocada. |
+| Toque em uma linha do overlay | Seleciona modos, ajuda, configurações, placares e rewarded ad. |
 | Ponteiros simultâneos | Permite controlar as duas raquetes em paralelo. |
 | `pause()` do Android | Pausa o mundo automaticamente quando o app perde foco. |
 
 O reconhecimento usa `Viewport.unproject`, portanto o gesto é convertido para coordenadas lógicas da arena e não depende da resolução física do aparelho. O toque duplo só é aceito dentro de uma janela de `0.28s` e com deslocamento máximo de `0.65` unidade de mundo. Um toque que ultrapasse `0.18` unidade vira arraste e não é contado como toque duplo.
 
-`TouchPongWorld` mantém física determinística, placar, limite de partida, pausa, habilidades e efeitos da bola. O render usa `ShapeRenderer` e os efeitos visuais usam pools fixos de trilha e partículas para reduzir alocações por frame.
+`TouchPongWorld` mantém física determinística, placar, modos `CLASSIC`, `SURVIVAL`, `TURBO`, `VERSUS`, `MUTANT` e `CAMPAIGN`, energia, poderes ativos, power-ups coletáveis e efeitos da bola. `OVERDRIVE` acelera a bola, `SHIELD` bloqueia uma falha e `WIDE` amplia a raquete. Os power-ups `ENERGY`, `SLOW`, `SPLIT` e `MULTI` alteram energia, velocidade, eco visual e multiplicador do próximo ponto. O render usa `ShapeRenderer` e os efeitos visuais usam pools fixos de trilha e partículas para reduzir alocações por frame.
 
 ## Serviços e fallbacks
 
@@ -130,7 +132,7 @@ O launcher Android usa paisagem, modo imersivo, aceleração de hardware, sem ac
 
 ## Playthrough e testes automatizados
 
-O playthrough `playthrough/TouchPlaythrough.java` simula 900 frames a 60 FPS, controla as duas raquetes com ponteiros independentes, dispara toque duplo nos dois lados, gera pontos, pausa e retoma o mundo e verifica que a bola permanece numericamente válida.
+O playthrough `playthrough/TouchPlaythrough.java` percorre o menu principal, seleção de modos, ajuda, configurações e pausa; testa energia, `OVERDRIVE`, `SHIELD`, `WIDE`, coleta de power-ups, Survival, os quatro bosses da campanha e depois simula 900 frames a 60 FPS com dois ponteiros, toque duplo, pontos, pausa, trilha, partículas e finitude numérica.
 
 Os testes JUnit do core cobrem:
 
