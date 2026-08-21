@@ -71,9 +71,27 @@ jobs:
           emulator-boot-timeout: 600
           disable-linux-hw-accel: true
           disable-animations: true
-          script: cd libgdx-touch && ./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace
+          script: |
+            set -u
+            for attempt in 1 2 3; do
+              for boot in $(seq 1 60); do
+                if adb devices | awk '$2 == "device" { found=1 } END { exit found ? 0 : 1 }'; then
+                  break
+                fi
+                sleep 2
+              done
+              if adb devices | awk '$2 == "device" { found=1 } END { exit found ? 0 : 1 }'; then
+                if (cd libgdx-touch && ./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace); then
+                  exit 0
+                fi
+              fi
+              adb reconnect || true
+              sleep 10
+            done
+            exit 1
 
       - name: Upload debug APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: game-ping-pong-touch-debug-apk

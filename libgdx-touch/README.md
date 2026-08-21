@@ -195,7 +195,7 @@ O workflow de release usa os Secrets acima e executa:
 ./gradlew :android:assembleRelease --no-daemon --stacktrace
 ```
 
-A etapa instrumentada usa um emulador API 29/x86 com imagem padrão, snapshot e aceleração Linux desativados e opções headless para reduzir falhas de boot; o APK e o target continuam em API 35. O APK debug é publicado como artefato por 14 dias. Falhas preservam relatórios Gradle e resultados de testes quando existirem.
+A etapa instrumentada usa um emulador API 29/x86 com imagem padrão, snapshot e aceleração Linux desativados e opções headless para reduzir falhas de boot; o APK e o target continuam em API 35. O script aguarda um dispositivo ADB online e tenta a suíte até três vezes. O APK debug é publicado como artefato por 14 dias mesmo quando a instrumentação falha depois da compilação; falhas preservam relatórios Gradle e resultados de testes quando existirem.
 
 O workflow de debug não injeta IDs de produção nem credenciais de assinatura e publica o artefato `game-ping-pong-touch-debug-apk`. O workflow separado [`.github/workflows/android-release.yml`](../.github/workflows/android-release.yml), acionado manualmente ou por tag `v*.*.*`, restaura a upload key apenas no runner, exige os IDs e Secrets de produção, executa `:android:assembleRelease` e `:android:bundleRelease` e publica o APK em `dist/release/game-ping-pong-touch-android.apk` e o AAB em `dist/release/game-ping-pong-touch-android.aab`. Em execução manual, informe `version_name` e `version_code`; em tags, a versão é obtida da tag. Se qualquer valor obrigatório estiver ausente, o job falha antes de gerar os artefatos.
 
