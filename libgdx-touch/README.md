@@ -35,6 +35,25 @@ libgdx-touch/
 
 O reconhecimento usa `Viewport.unproject`, portanto o gesto é convertido para coordenadas lógicas da arena e não depende da resolução física do aparelho. O toque duplo só é aceito dentro de uma janela de `0.28s` e com deslocamento máximo de `0.65` unidade de mundo. Um toque que ultrapasse `0.18` unidade vira arraste e não é contado como toque duplo.
 
+## Fluxo de telas mobile
+
+O menu principal é a porta de entrada padrão do módulo mobile. Ele oferece `JOGAR`, seleção de modo, ajuda, configurações, placares, conquistas e recompensa. A seleção de modo preserva o último modo escolhido, e as páginas de pausa e resultados reutilizam o mesmo controlador de navegação para manter o fluxo consistente em toque, teclado e botão de voltar do Android.
+
+Ao iniciar uma partida, o jogo entra em uma tela de transição com o nome e a descrição do modo, contagem regressiva e estado `GO!`. Durante essa contagem, os gestos são bloqueados e a física não avança. Ao concluir a partida, uma transição curta `MATCH COMPLETE` antecede a página de resultados. O reinício passa novamente por `START_MATCH`, enquanto `VOLTAR AO MENU` usa `RETURN_TO_MENU` antes de deixar o estado jogável.
+
+| Estado | Entrada | Comportamento |
+|---|---|---|
+| `MAIN` | Inicialização ou retorno | Exibe o menu principal e não atualiza a física. |
+| `MODES` | `ESCOLHER MODO` | Permite escolher os seis modos e iniciar a transição da partida. |
+| `START_MATCH` | `JOGAR` ou `JOGAR NOVAMENTE` | Exibe contagem regressiva, bloqueia input e prepara uma partida limpa. |
+| `PLAYING` | Fim da contagem | Atualiza física, gestos, placar, poderes, power-ups e efeitos. |
+| `PAUSE` | Botão de pausa, `BACK`, `ESC` ou `P` | Congela a física e oferece continuar ou retornar. |
+| `SHOW_RESULTS` | Partida concluída | Exibe a transição de encerramento antes dos resultados. |
+| `RESULTS` | Fim da transição | Mostra jogar novamente ou voltar ao menu. |
+| `RETURN_TO_MENU` | `VOLTAR AO MENU` | Limpa a partida e retorna ao menu principal. |
+
+A implementação está em `MobileTransition.java` e é usada por `PingPongTouchGame.java`. O teste `MobileTransitionTest` cobre duração, progresso, contagem regressiva e fallback de tipo; o playthrough também registra `transitions start/results/menu=OK`.
+
 `TouchPongWorld` mantém física determinística, placar, modos `CLASSIC`, `SURVIVAL`, `TURBO`, `VERSUS`, `MUTANT` e `CAMPAIGN`, energia, poderes ativos, power-ups coletáveis e efeitos da bola. `OVERDRIVE` acelera a bola, `SHIELD` bloqueia uma falha e `WIDE` amplia a raquete. Os power-ups `ENERGY`, `SLOW`, `SPLIT` e `MULTI` alteram energia, velocidade, eco visual e multiplicador do próximo ponto. No `VERSUS`, ambos os jogadores têm energia, seleção independente, ativação por duplo toque e podem coletar power-ups; o jogador do topo usa toque na metade superior e as bordas dessa metade para trocar o poder. O render usa `ShapeRenderer` e os efeitos visuais usam pools fixos de trilha e partículas para reduzir alocações por frame.
 
 ## Serviços e fallbacks
@@ -165,7 +184,7 @@ O resultado detalhado fica em `playthrough.log`. O resultado validado nesta vers
 
 ## Plano de assets
 
-A direção visual e o pipeline de melhoria dos assets estão documentados em [`ASSETS_MOBILE_PLAN.md`](ASSETS_MOBILE_PLAN.md). O plano cobre ícones sem texto para poderes/power-ups, paleta ciano/laranja, arenas com contraste seguro, `TextureAtlas`, escalas de resolução, fallback do `ShapeRenderer` e critérios de acessibilidade/performance.
+A direção visual e o pipeline de melhoria dos assets estão documentados em [`ASSETS_MOBILE_PLAN.md`](ASSETS_MOBILE_PLAN.md). O plano cobre ícones sem texto para poderes/power-ups, paleta ciano/laranja, arenas com contraste seguro, `TextureAtlas`, escalas de resolução, fallback do `ShapeRenderer` e critérios de acessibilidade/performance. A pesquisa complementar de ferramentas está em [`ASSET_TOOL_RESEARCH.md`](ASSET_TOOL_RESEARCH.md), com recomendações para `TexturePacker`, `TextureAtlas`, `ShaderProgram`, SVG, scripts Python e Blender Geometry Nodes.
 
 ## Efeitos visuais da bola
 

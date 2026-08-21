@@ -8,6 +8,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mccartney0.gamepingpong.AbilityType;
 import com.mccartney0.gamepingpong.MobileGameMode;
 import com.mccartney0.gamepingpong.MobileMenu;
+import com.mccartney0.gamepingpong.MobileTransition;
 import com.mccartney0.gamepingpong.PowerUpType;
 import com.mccartney0.gamepingpong.TouchPongWorld;
 import com.mccartney0.gamepingpong.input.PaddleSide;
@@ -149,6 +150,27 @@ public class TouchPlaythrough {
         log.append("menu main/modes/help/settings/pause=OK\n");
     }
 
+    private static void exerciseTransitions(StringBuilder log) {
+        MobileTransition transition = new MobileTransition();
+        transition.begin(MobileTransition.Type.START_MATCH, 1.6f);
+        check(transition.isActive(), "transicao de inicio ativa");
+        check("4".equals(transition.getCountdownText()), "contagem inicial");
+        transition.update(0.8f);
+        check(transition.isActive(), "transicao de inicio em andamento");
+        transition.update(0.8f);
+        check(!transition.isActive() && "GO!".equals(transition.getCountdownText()),
+                "transicao de inicio concluida");
+
+        transition.begin(MobileTransition.Type.SHOW_RESULTS, 0.8f);
+        transition.update(0.8f);
+        check(!transition.isActive(), "transicao de resultados concluida");
+
+        transition.begin(MobileTransition.Type.RETURN_TO_MENU, 0.55f);
+        transition.update(0.55f);
+        check(!transition.isActive(), "transicao de retorno concluida");
+        log.append("transitions start/results/menu=OK\n");
+    }
+
     private static void exerciseVersus(Viewport viewport, StringBuilder log) {
         TouchPongWorld versus = new TouchPongWorld();
         versus.setMode(MobileGameMode.VERSUS);
@@ -207,6 +229,7 @@ public class TouchPlaythrough {
         StringBuilder log = new StringBuilder();
 
         exerciseMenu(world, log);
+        exerciseTransitions(log);
         exerciseVersus(viewport, log);
         exerciseCampaignAndSurvival(log);
         world.setMode(MobileGameMode.MUTANT);

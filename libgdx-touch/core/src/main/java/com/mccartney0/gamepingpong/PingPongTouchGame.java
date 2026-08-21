@@ -51,6 +51,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private GlyphLayout layout;
     private PaddleTouchInput touchInput;
     private MobileMenu menu;
+    private final MobileTransition transition = new MobileTransition();
     private MobileGameMode currentMode = MobileGameMode.CLASSIC;
     private String currentLeaderboardId;
     private boolean gameStarted;
@@ -78,6 +79,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
         layout = new GlyphLayout();
         touchInput = new PaddleTouchInput(viewport, world);
         menu = new MobileMenu(new MenuListener());
+        menu.showMain();
         menu.setScreenSize(Gdx.graphics.getHeight());
         monetizationService.setBannerVisible(false);
         Gdx.input.setInputProcessor(new GameInputRouter());
@@ -86,15 +88,19 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
     @Override
     public void render() {
-        boolean overlayVisible = !gameStarted || world.isPaused() || world.isMatchOver();
-        if (!overlayVisible) {
-            float delta = Math.min(Gdx.graphics.getDeltaTime(), 1f / 20f);
+        float delta = Math.min(Gdx.graphics.getDeltaTime(), 1f / 20f);
+        updateTransition(delta);
+        boolean playing = gameStarted && !transition.isActive()
+                && !world.isPaused() && !world.isMatchOver();
+        boolean overlayVisible = !playing;
+        if (playing) {
             touchInput.update(delta);
             world.update(delta);
             processAchievements();
             submitCurrentMatchScoreIfFinished();
-            if (world.isMatchOver()) {
+            if (world.isMatchOver() && menu.getPage() != MobileMenu.Page.RESULTS) {
                 menu.showResults();
+                transition.begin(MobileTransition.Type.SHOW_RESULTS, 0.8f);
             }
         }
 
@@ -116,7 +122,11 @@ public class PingPongTouchGame extends ApplicationAdapter {
         batch.begin();
         renderHud();
         if (overlayVisible) {
-            renderMenuText();
+            if (transition.isActive()) {
+                renderTransitionText();
+            } else {
+                renderMenuText();
+            }
         }
         batch.end();
     }
@@ -169,6 +179,10 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
     public MobileMenu getMenu() {
         return menu;
+    }
+
+    public MobileTransition getTransition() {
+        return transition;
     }
 
     public GameServices getGameServices() {
@@ -257,6 +271,37 @@ public class PingPongTouchGame extends ApplicationAdapter {
         }
     }
 
+    private void updateTransition(float delta) {
+        if (!transition.isActive()) {
+            return;
+        }
+        transition.update(delta);
+        if (transition.isActive()) {
+            return;
+        }
+        if (transition.getType() == MobileTransition.Type.START_MATCH) {
+            world.setPaused(false);
+        } else if (transition.getType() == MobileTransition.Type.RETURN_TO_MENU) {
+            gameStarted = false;
+            world.setPaused(true);
+        }
+    }
+
+    private void renderTransitionText() {
+        MobileTransition.Type type = transition.getType();
+        String title = type == MobileTransition.Type.SHOW_RESULTS
+                ? "MATCH COMPLETE" : type == MobileTransition.Type.RETURN_TO_MENU
+                        ? "RETURNING TO MENU" : currentMode.getLabel();
+        font.setColor(new Color(0.42f, 0.92f, 1f, 1f));
+        drawText(title, TouchPongWorld.WIDTH / 2f, 8.6f, true);
+        font.setColor(new Color(1f, 0.84f, 0.35f, 1f));
+        drawText(type == MobileTransition.Type.START_MATCH
+                ? transition.getCountdownText() : "...", TouchPongWorld.WIDTH / 2f, 6.5f, true);
+        font.setColor(new Color(0.75f, 0.86f, 0.95f, 1f));
+        drawText(type == MobileTransition.Type.START_MATCH
+                ? currentMode.getDescription() : "Aguarde a proxima tela", TouchPongWorld.WIDTH / 2f, 4.8f, true);
+    }
+
     private void renderOverlayBackground() {
         renderer.setColor(0.015f, 0.025f, 0.08f, 0.86f);
         renderer.rect(0f, 0f, TouchPongWorld.WIDTH, TouchPongWorld.HEIGHT);
@@ -265,7 +310,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     }
 
     private void renderHud() {
-        if (!gameStarted) {
+        if (!gameStarted || transition.isActive()) {
             return;
         }
         font.setColor(Color.WHITE);
@@ -330,8 +375,10 @@ public class PingPongTouchGame extends ApplicationAdapter {
             currentMode = mode;
             world.setMode(mode);
             gameStarted = true;
+            world.setPaused(true);
             finalScoreSubmissionRequested = false;
             monetizationService.setBannerVisible(false);
+            transition.begin(MobileTransition.Type.START_MATCH, 1.6f);
         }
 
         @Override
@@ -342,9 +389,11 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
         @Override
         public void onOpenMainMenu() {
-            gameStarted = false;
             world.resetMatch();
+            world.setPaused(true);
+            gameStarted = false;
             monetizationService.setBannerVisible(false);
+            transition.begin(MobileTransition.Type.RETURN_TO_MENU, 0.55f);
         }
 
         @Override
@@ -420,6 +469,9 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
         @Override
         public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+            if (transition.isActive()) {
+                return true;
+            }
             if (isOverlayVisible()) {
                 return menu.touchUp(screenX, screenY, pointer, button);
             }
@@ -454,7 +506,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
         }
 
         private boolean isOverlayVisible() {
-            return !gameStarted || world.isPaused() || world.isMatchOver();
+            return transition.isActive() || !gameStarted || world.isPaused() || world.isMatchOver();
         }
     }
 }
