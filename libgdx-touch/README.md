@@ -159,7 +159,7 @@ java -Djava.awt.headless=true \
   TouchPlaythrough
 ```
 
-O resultado detalhado fica em `playthrough.log`. O resultado validado nesta versão inclui `score=3:0`, duas ativações de habilidade, duas transições de pausa, trilha ativa e partículas emitidas.
+O resultado detalhado fica em `playthrough.log`. O resultado validado nesta versão inclui `score=2:0`, duas ativações por toque duplo, troca de poder pela borda, coleta de power-up, duas transições de pausa, trilha ativa e partículas emitidas.
 
 ## Efeitos visuais da bola
 
