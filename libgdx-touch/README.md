@@ -67,31 +67,52 @@ Os cinco leaderboards também aceitam propriedades e variáveis homônimas docum
 
 ## Assinatura de APK/AAB
 
-Keystores, senhas e aliases nunca são versionados. O módulo aceita `android/signing.properties` local, que é ignorado pelo Git, ou estas variáveis no CI:
+Keystores, senhas e aliases nunca são versionados. Localmente, o módulo aceita `libgdx-touch/signing.properties` — isto é, `signing.properties` na raiz deste módulo — e o arquivo é ignorado pelo Git. No GitHub Actions, os valores são fornecidos pelos seguintes **Repository Secrets**:
 
-```text
-ANDROID_KEYSTORE_PATH
-ANDROID_KEYSTORE_PASSWORD
-ANDROID_KEY_ALIAS
-ANDROID_KEY_PASSWORD
-```
+| Secret | Conteúdo |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | Keystore de upload codificado em Base64, sem quebras de linha |
+| `ANDROID_KEYSTORE_PASSWORD` | Senha do keystore |
+| `ANDROID_KEY_ALIAS` | Alias da upload key |
+| `ANDROID_KEY_PASSWORD` | Senha da chave privada |
+| `GAME_SERVICES_PROJECT_ID` | ID do projeto do Play Games Services |
+| `LEADERBOARD_MUTANT_ARENA_SCORE` | ID real do leaderboard Arena Mutante |
+| `LEADERBOARD_CAMPAIGN_BOSSES` | ID real do leaderboard da campanha |
+| `LEADERBOARD_SURVIVAL_SCORE` | ID real do leaderboard de sobrevivência |
+| `LEADERBOARD_SPEED_RUN_MS` | ID real do leaderboard de speed run |
+| `LEADERBOARD_BEST_COMBO` | ID real do leaderboard de melhor combo |
+| `ACHIEVEMENT_FIRST_POINT` | ID real da conquista do primeiro ponto |
+| `ACHIEVEMENT_MATCH_WIN` | ID real da conquista de vitória |
+| `ADMOB_APP_ID` | App ID AdMob de produção |
+| `BANNER_AD_UNIT_ID` | ID da unidade de banner AdMob de produção |
+| `REWARDED_AD_UNIT_ID` | ID da unidade rewarded AdMob de produção |
 
-Exemplo local de `android/signing.properties` — **não commitar**:
+As variáveis `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD` também são aceitas pelo Gradle para builds locais ou outros runners. No workflow de release, `ANDROID_KEYSTORE_PATH` é criado automaticamente no diretório temporário do runner a partir de `ANDROID_KEYSTORE_BASE64`.
+
+Exemplo local de `libgdx-touch/signing.properties` — **não commitar**:
 
 ```properties
 storeFile=/caminho/seguro/game-ping-pong-upload.jks
 storePassword=senha-local
-keyAlias=game-ping-pong
+keyAlias=game-ping-pong-upload
 keyPassword=senha-local
 ```
 
-Para gerar um AAB assinado localmente, com as propriedades acima configuradas:
+Para gerar localmente os dois artefatos de release:
 
 ```bash
-./gradlew :android:bundleRelease --no-daemon --stacktrace
+./gradlew :core:test :android:bundleRelease :android:assembleRelease \
+  --no-daemon --stacktrace
 ```
 
-Sem credenciais, `assembleRelease` continua compilável, mas não deve ser tratado como artefato pronto para publicação. No GitHub Actions, injete o keystore a partir de Secrets e defina os quatro valores de assinatura no ambiente do job; o workflow versionado gera apenas APK debug.
+Os arquivos esperados são:
+
+```text
+android/build/outputs/bundle/release/android-release.aab
+android/build/outputs/apk/release/android-release.apk
+```
+
+Sem credenciais, `assembleRelease` pode compilar, mas não deve ser tratado como artefato pronto para publicação. A configuração de produção precisa apontar para a upload key real.
 
 ## Execução local
 
@@ -156,7 +177,7 @@ world.setEffectsQuality(BallEffects.Quality.HIGH);
 
 O arquivo [`.github/workflows/android-apk.yml`](../.github/workflows/android-apk.yml) executa em alterações do módulo ou manualmente por `workflow_dispatch`. O job usa Java 17 no runner, Android SDK/API 35 e Gradle 8.2; a compatibilidade de bytecode dos módulos permanece Java 8.
 
-A sequência do pipeline é:
+A sequência do pipeline debug é:
 
 ```bash
 ./gradlew :core:test :core:build --no-daemon --stacktrace
@@ -164,10 +185,17 @@ A sequência do pipeline é:
 ./gradlew :android:connectedDebugAndroidTest --no-daemon --stacktrace
 ```
 
+O workflow de release usa os Secrets acima e executa:
+
+```bash
+./gradlew :core:test --no-daemon --stacktrace
+./gradlew :android:bundleRelease --no-daemon --stacktrace
+./gradlew :android:assembleRelease --no-daemon --stacktrace
+```
+
 A etapa instrumentada usa um emulador API 29/x86 com imagem padrão, snapshot e aceleração Linux desativados e opções headless para reduzir falhas de boot; o APK e o target continuam em API 35. O APK debug é publicado como artefato por 14 dias. Falhas preservam relatórios Gradle e resultados de testes quando existirem.
 
-O workflow de debug não injeta IDs de produção nem credenciais de assinatura. O workflow separado [`.github/workflows/android-release.yml`](../.github/workflows/android-release.yml), acionado manualmente ou por tag `v*.*.*`, restaura a upload key apenas no runner, exige todos os IDs e Secrets de produção e executa `bundleRelease`; se qualquer valor obrigatório estiver ausente, o job falha antes de gerar o AAB.
-
+O workflow de debug não injeta IDs de produção nem credenciais de assinatura e publica o artefato `game-ping-pong-touch-debug-apk`. O workflow separado [`.github/workflows/android-release.yml`](../.github/workflows/android-release.yml), acionado manualmente ou por tag `v*.*.*`, restaura a upload key apenas no runner, exige os IDs e Secrets de produção, executa `:android:assembleRelease` e `:android:bundleRelease` e publica o APK em `dist/release/game-ping-pong-touch-android.apk` e o AAB em `dist/release/game-ping-pong-touch-android.aab`. Em execução manual, informe `version_name` e `version_code`; em tags, a versão é obtida da tag. Se qualquer valor obrigatório estiver ausente, o job falha antes de gerar os artefatos.
 
 ## Auto-updater e Releases
 
@@ -176,7 +204,6 @@ O módulo Android executa `AndroidAutoUpdater.check(this)` no launcher. A verifi
 O launcher `lwjgl3` executa o mesmo contrato para `game-ping-pong-touch-desktop.zip`. O pacote é baixado e validado em `~/.game-ping-pong/updates`; depois o sistema abre a pasta para que o usuário extraia a nova distribuição após fechar o jogo.
 
 O módulo `release-updater` é compartilhado pelos dois launchers e também pelo app Java/AWT original. Ele usa apenas APIs Java 8, consulta a última GitHub Release pública e nunca recebe token de escrita. A publicação é feita exclusivamente pelo workflow com `GITHUB_TOKEN` e permissão `contents: write`.
-
 
 ## Progresso visual e teste do auto-updater
 
