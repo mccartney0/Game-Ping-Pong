@@ -1,0 +1,26 @@
+{
+  "size": 128,
+  "seed": 42,
+  "glow_radius": 10,
+  "stroke": 6,
+  "scales": [1, 2, 3],
+  "background": [0, 0, 0, 0],
+  "colors": {
+    "cyan": [74, 231, 255, 255],
+    "blue": [87, 134, 255, 255],
+    "orange": [255, 137, 62, 255],
+    "violet": [194, 105, 255, 255],
+    "white": [235, 250, 255, 255]
+  },
+  "assets": {
+    "power_overdrive": {"kind": "bolt", "color": "orange"},
+    "power_shield": {"kind": "shield", "color": "cyan"},
+    "power_wide": {"kind": "wide", "color": "blue"},
+    "power_energy": {"kind": "energy", "color": "cyan"},
+    "power_slow": {"kind": "slow", "color": "violet"},
+    "power_split": {"kind": "split", "color": "orange"},
+    "power_multi": {"kind": "multi", "color": "white"},
+    "menu_button": {"kind": "button", "color": "cyan"},
+    "arena_grid": {"kind": "grid", "color": "cyan"}
+  }
+}

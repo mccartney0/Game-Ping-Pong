@@ -7,9 +7,11 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.mccartney0.gamepingpong.input.PaddleSide;
@@ -47,6 +49,8 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private FitViewport viewport;
     private ShapeRenderer renderer;
     private SpriteBatch batch;
+    private ShaderProgram neonShader;
+    private NeonAssetCatalog neonAssets;
     private BitmapFont font;
     private GlyphLayout layout;
     private PaddleTouchInput touchInput;
@@ -60,6 +64,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private String firstPointAchievementId;
     private String matchWinAchievementId;
     private BallEffectsQuality effectsQuality = BallEffectsQuality.MEDIUM;
+    private float visualTime;
 
     private enum BallEffectsQuality {
         LOW, MEDIUM, HIGH
@@ -74,6 +79,9 @@ public class PingPongTouchGame extends ApplicationAdapter {
         camera.update();
         renderer = new ShapeRenderer();
         batch = new SpriteBatch();
+        neonShader = loadNeonShader();
+        neonAssets = new NeonAssetCatalog();
+        neonAssets.load();
         font = new BitmapFont();
         font.getData().setScale(0.52f);
         layout = new GlyphLayout();
@@ -89,6 +97,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     @Override
     public void render() {
         float delta = Math.min(Gdx.graphics.getDeltaTime(), 1f / 20f);
+        visualTime += delta;
         updateTransition(delta);
         boolean playing = gameStarted && !transition.isActive()
                 && !world.isPaused() && !world.isMatchOver();
@@ -119,7 +128,10 @@ public class PingPongTouchGame extends ApplicationAdapter {
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
         batch.setProjectionMatrix(camera.combined);
+        batch.setShader(neonShader);
         batch.begin();
+        configureNeonShader();
+        renderPowerUpTexture();
         renderHud();
         if (overlayVisible) {
             if (transition.isActive()) {
@@ -129,6 +141,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
             }
         }
         batch.end();
+        batch.setShader(null);
     }
 
     @Override
@@ -166,6 +179,12 @@ public class PingPongTouchGame extends ApplicationAdapter {
         }
         if (font != null) {
             font.dispose();
+        }
+        if (neonAssets != null) {
+            neonAssets.dispose();
+        }
+        if (neonShader != null) {
+            neonShader.dispose();
         }
     }
 
@@ -269,6 +288,61 @@ public class PingPongTouchGame extends ApplicationAdapter {
         if (world.playerScore >= TouchPongWorld.MATCH_SCORE) {
             achievementProgress.onMatchWin(gameServices, matchWinAchievementId);
         }
+    }
+
+    private void renderPowerUpTexture() {
+        if (neonAssets == null || !neonAssets.isLoaded()) {
+            return;
+        }
+        PowerUp powerUp = world.getActivePowerUp();
+        if (powerUp == null || !powerUp.isActive()) {
+            return;
+        }
+        Texture texture = neonAssets.getPowerUpTexture(powerUp.getType());
+        if (texture == null) {
+            return;
+        }
+        float size = 0.86f;
+        batch.draw(texture, powerUp.getX() - size / 2f, powerUp.getY() - size / 2f, size, size);
+    }
+
+    private ShaderProgram loadNeonShader() {
+        ShaderProgram.pedantic = false;
+        try {
+            String vertex = Gdx.files.internal("shaders/neon_glow_scanlines.vert").readString();
+            String fragment = Gdx.files.internal("shaders/neon_glow_scanlines.frag").readString();
+            ShaderProgram shader = new ShaderProgram(vertex, fragment);
+            if (!shader.isCompiled()) {
+                if (Gdx.app != null) {
+                    Gdx.app.error("NeonShader", shader.getLog());
+                }
+                shader.dispose();
+                return null;
+            }
+            return shader;
+        } catch (RuntimeException exception) {
+            if (Gdx.app != null) {
+                Gdx.app.error("NeonShader", "Shader indisponivel; usando render padrao", exception);
+            }
+            return null;
+        }
+    }
+
+    private void configureNeonShader() {
+        if (neonShader == null) {
+            return;
+        }
+        float glow = effectsQuality == BallEffectsQuality.LOW ? 0.55f
+                : effectsQuality == BallEffectsQuality.HIGH ? 1.35f : 0.95f;
+        float scanlines = effectsQuality == BallEffectsQuality.LOW ? 0f
+                : effectsQuality == BallEffectsQuality.HIGH ? 0.65f : 0.35f;
+        neonShader.setUniformf("u_time", visualTime);
+        neonShader.setUniformf("u_resolution", Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        neonShader.setUniformf("u_texelSize", 1f / 256f, 1f / 256f);
+        neonShader.setUniformf("u_glowStrength", glow);
+        neonShader.setUniformf("u_glowRadius", effectsQuality == BallEffectsQuality.HIGH ? 3f : 2f);
+        neonShader.setUniformf("u_scanlineStrength", scanlines);
+        neonShader.setUniformf("u_tint", 0.25f, 0.85f, 1f, 1f);
     }
 
     private void updateTransition(float delta) {

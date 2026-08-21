@@ -17,6 +17,14 @@ allprojects {
     }
 }
 
+configurations {
+    texturePacker
+}
+
+dependencies {
+    texturePacker "com.badlogicgames.gdx:gdx-tools:${gdxVersion}"
+}
+
 subprojects {
     apply plugin: 'eclipse'
     apply plugin: 'idea'
@@ -27,6 +35,29 @@ configure(subprojects.findAll { it.name != 'android' }) {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
     compileJava.options.encoding = 'UTF-8'
+}
+
+tasks.register('packNeonAssets', JavaExec) {
+    group = 'assets'
+    description = 'Empacota os PNGs neon 1x em generated/atlas/neon.atlas'
+    classpath = configurations.texturePacker
+    mainClass = 'com.badlogic.gdx.tools.texturepacker.TexturePacker'
+    def inputDir = rootProject.file('../assets/generated/neon/1x')
+    def outputDir = rootProject.file('../assets/generated/atlas')
+    def settingsFile = rootProject.file('../assets/config/neon_pack.json')
+    doFirst {
+        delete outputDir
+        outputDir.mkdirs()
+        copy {
+            from settingsFile
+            into inputDir
+            rename { 'pack.json' }
+        }
+    }
+    args inputDir.absolutePath, outputDir.absolutePath, 'neon'
+    doLast {
+        delete file("${inputDir.absolutePath}/pack.json")
+    }
 }
 
 tasks.register('clean', Delete) {

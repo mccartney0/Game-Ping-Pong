@@ -184,7 +184,14 @@ O resultado detalhado fica em `playthrough.log`. O resultado validado nesta vers
 
 ## Plano de assets
 
-A direção visual e o pipeline de melhoria dos assets estão documentados em [`ASSETS_MOBILE_PLAN.md`](ASSETS_MOBILE_PLAN.md). O plano cobre ícones sem texto para poderes/power-ups, paleta ciano/laranja, arenas com contraste seguro, `TextureAtlas`, escalas de resolução, fallback do `ShapeRenderer` e critérios de acessibilidade/performance. A pesquisa complementar de ferramentas está em [`ASSET_TOOL_RESEARCH.md`](ASSET_TOOL_RESEARCH.md), com recomendações para `TexturePacker`, `TextureAtlas`, `ShaderProgram`, SVG, scripts Python e Blender Geometry Nodes.
+A direção visual e o pipeline de melhoria dos assets estão documentados em [`ASSETS_MOBILE_PLAN.md`](ASSETS_MOBILE_PLAN.md). O plano cobre ícones sem texto para poderes/power-ups, paleta ciano/laranja, arenas com contraste seguro, `TextureAtlas`, escalas de resolução, fallback do `ShapeRenderer` e critérios de acessibilidade/performance. A pesquisa complementar de ferramentas está em [`ASSET_TOOL_RESEARCH.md`](ASSET_TOOL_RESEARCH.md), com recomendações para `TexturePacker`, `TextureAtlas`, `ShaderProgram`, SVG, scripts Python e Blender Geometry Nodes. O manual executável, com instruções para criar assets com IA ou programas externos, ajustar parâmetros, gerar o atlas, compilar o APK e publicar, está em [`NEON_ASSET_PIPELINE.md`](NEON_ASSET_PIPELINE.md).
+
+Para regenerar e validar rapidamente os assets:
+
+```bash
+bash tools/build_neon_assets.sh
+./gradlew :core:test :lwjgl3:compileJava --no-daemon
+```
 
 ## Efeitos visuais da bola
 

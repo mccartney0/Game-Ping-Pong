@@ -53,3 +53,11 @@ Para preservar desempenho, carregue atlas no `create()`, reutilize `TextureRegio
 | CI | Assets não contêm segredos, keystores ou referências Android no core |
 
 A geração de visuais deve ser feita como um **asset pack coerente**, não como imagens isoladas. Para cada novo boss ou arena, mantenha os mesmos contornos, contraste e linguagem de efeitos; a novidade deve vir da silhueta e da mecânica, não de trocar completamente o estilo.
+
+## Implementação publicada
+
+A primeira versão automatizada está disponível no repositório em `libgdx-touch/tools/neon_asset_trainer.py`, com o preset `assets/config/neon_assets.json`. O comando `generate` produz PNGs RGBA nas escalas 1x, 2x e 3x; `preview` cria uma folha de inspeção; `tune` gera uma grade de combinações de brilho e contorno; e `validate` verifica modo RGBA, dimensões e alpha não vazio. O atalho `libgdx-touch/tools/build_neon_assets.sh` executa geração, preview e validação em sequência.
+
+Os shaders `assets/shaders/neon_glow_scanlines.vert` e `assets/shaders/neon_glow_scanlines.frag` fornecem glow, pulso e scanlines para o `SpriteBatch`. O shader é carregado de forma segura pelo `PingPongTouchGame`; se a leitura ou compilação falhar, o render padrão continua funcionando. `NeonAssetCatalog` carrega os assets do caminho lógico `generated/neon/1x/`, e o power-up ativo usa seu PNG neon quando disponível, preservando o círculo procedural em caso de ausência.
+
+O caminho Android está configurado em `android/build.gradle` para empacotar a pasta raiz `assets`; desktop e testes continuam compartilhando o mesmo conjunto de arquivos pelo source set do `core`. O fluxo detalhado de criação com IA ou editor externo, conversão para PNG RGBA, regeneração, validação, build local e publicação está em `NEON_ASSET_PIPELINE.md`.

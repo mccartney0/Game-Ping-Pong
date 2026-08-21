@@ -1,0 +1,17 @@
+{
+  "paddingX": 4,
+  "paddingY": 4,
+  "bleed": true,
+  "duplicatePadding": true,
+  "rotation": false,
+  "maxWidth": 512,
+  "maxHeight": 512,
+  "filterMin": "Linear",
+  "filterMag": "Linear",
+  "wrapX": "ClampToEdge",
+  "wrapY": "ClampToEdge",
+  "format": "RGBA8888",
+  "premultiplyAlpha": false,
+  "flattenPaths": true,
+  "prettyPrint": true
+}
