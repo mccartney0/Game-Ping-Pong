@@ -34,3 +34,9 @@ O sandbox de desenvolvimento não possui Android SDK local. Por isso, a validaç
 ## Referências
 
 [1]: https://raw.githubusercontent.com/libgdx/libgdx/1.14.2/backends/gdx-backend-android/src/com/badlogic/gdx/backends/android/AndroidGraphics.java "libGDX 1.14.2 AndroidGraphics"
+
+## Evidência da gravação de 22/08/2026
+
+A gravação recebida começa com o banner de teste já visível e a área do jogo já aparece severamente pixelizada desde o primeiro frame. O vídeo não registra o fechamento do anúncio, portanto não prova que a corrupção começou no retorno de uma tela fullscreen. O anúncio permanece nítido, enquanto somente a superfície libGDX fica em baixa resolução aparente. Isso aponta para um problema de dimensionamento/composição da `SurfaceView` dentro do layout compartilhado com o `AdView`.
+
+A correção adicional foi implementada em `AndroidLauncher`: a Activity agora usa um `LinearLayout` vertical com um `gameHost` ponderado e um `adHost` separado. O `AdView` não é mais sobreposto diretamente sobre a mesma área do jogo; quando o banner aparece, o host do jogo recebe a altura restante e o `GLSurfaceView` recebe uma medida consistente, permitindo que o `FitViewport` ajuste a câmera corretamente.

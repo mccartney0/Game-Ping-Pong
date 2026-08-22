@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
@@ -31,11 +32,24 @@ public class AndroidLauncher extends AndroidApplication {
                 getString(R.string.achievement_match_win));
 
         View gameView = initializeForView(game, configuration);
-        FrameLayout root = new FrameLayout(this);
-        root.addView(gameView, new FrameLayout.LayoutParams(
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(android.graphics.Color.BLACK);
+
+        FrameLayout gameHost = new FrameLayout(this);
+        gameHost.setBackgroundColor(android.graphics.Color.BLACK);
+        root.addView(gameHost, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        gameHost.addView(gameView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
-        monetization.attachBanner(root);
+
+        FrameLayout adHost = new FrameLayout(this);
+        adHost.setBackgroundColor(android.graphics.Color.BLACK);
+        root.addView(adHost, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        monetization.attachBanner(adHost);
         setContentView(root);
     }
 
