@@ -1,0 +1,32 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.4'
+    }
+}
+
+allprojects {
+    group = 'com.mccartney0.gamepingpong'
+    version = '1.0.0-clean'
+    ext.gdxVersion = '1.14.2'
+}
+
+subprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+configure(subprojects.findAll { it.name == 'core' }) {
+    apply plugin: 'java-library'
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    compileJava.options.encoding = 'UTF-8'
+    compileTestJava.options.encoding = 'UTF-8'
+}
+

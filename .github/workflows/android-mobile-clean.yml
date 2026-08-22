@@ -1,0 +1,72 @@
+name: Build Android Mobile Clean
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'mobile-clean/**'
+      - '.github/workflows/android-mobile-clean.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'mobile-clean/**'
+      - '.github/workflows/android-mobile-clean.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-mobile-clean:
+    name: Compile clean mobile APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
+      - name: Run clean core tests
+        working-directory: mobile-clean
+        run: ./gradlew :core:test --no-daemon --stacktrace
+
+      - name: Build clean debug APK
+        working-directory: mobile-clean
+        run: ./gradlew :android:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload clean debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-ping-pong-mobile-clean-debug-apk
+          path: mobile-clean/android/build/outputs/apk/debug/android-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload clean build reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-ping-pong-mobile-clean-gradle-reports
+          path: |
+            mobile-clean/**/build/reports/**
+            mobile-clean/**/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 7

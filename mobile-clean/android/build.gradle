@@ -1,0 +1,71 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.mccartney0.gamepingpong.clean'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.mccartney0.gamepingpong.clean'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0-clean'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs = []
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+}
+
+configurations {
+    natives
+}
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-android:${gdxVersion}"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-arm64-v8a"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-armeabi-v7a"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-x86"
+    natives "com.badlogicgames.gdx:gdx-platform:${gdxVersion}:natives-x86_64"
+}
+
+tasks.register('copyAndroidNatives') {
+    doFirst {
+        delete file('src/main/jniLibs')
+        file('src/main/jniLibs').mkdirs()
+    }
+    doLast {
+        configurations.natives.files.each { archive ->
+            def abi = archive.name
+                    .replaceFirst(/^.*-natives-/, '')
+                    .replaceFirst(/\.(jar|zip)$/, '')
+            copy {
+                from zipTree(archive)
+                into file("src/main/jniLibs/${abi}")
+                include 'libgdx.so'
+            }
+        }
+    }
+}
+
+tasks.named('preBuild').configure {
+    dependsOn('copyAndroidNatives')
+}
