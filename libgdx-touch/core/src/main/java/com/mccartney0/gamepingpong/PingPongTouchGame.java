@@ -69,6 +69,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private float visualTime;
     private boolean neonRenderingEnabled;
     private String lastAudioEvent;
+    private volatile boolean graphicsRecoveryRequested;
 
     private enum BallEffectsQuality {
         LOW, MEDIUM, HIGH
@@ -107,6 +108,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
     @Override
     public void render() {
+        recoverGraphicsIfRequested();
         float delta = Math.min(Gdx.graphics.getDeltaTime(), 1f / 20f);
         visualTime += delta;
         updateTransition(delta);
@@ -153,6 +155,14 @@ public class PingPongTouchGame extends ApplicationAdapter {
             }
         }
         batch.end();
+    }
+
+    /** Chamado pela Activity quando um anuncio ou outra janela devolve o foco ao jogo. */
+    public void onAndroidWindowFocusChanged(boolean hasFocus) {
+        if (hasFocus && Gdx.app != null
+                && Gdx.app.getType() == Application.ApplicationType.Android) {
+            graphicsRecoveryRequested = true;
+        }
     }
 
     @Override
@@ -294,6 +304,45 @@ public class PingPongTouchGame extends ApplicationAdapter {
                         // O placar local permanece válido sem rede.
                     }
                 });
+    }
+
+    private void recoverGraphicsIfRequested() {
+        if (!graphicsRecoveryRequested || Gdx.gl == null) {
+            return;
+        }
+        graphicsRecoveryRequested = false;
+        if (renderer != null) {
+            renderer.dispose();
+        }
+        if (batch != null) {
+            batch.dispose();
+        }
+        if (font != null) {
+            font.dispose();
+        }
+        renderer = new ShapeRenderer();
+        batch = new SpriteBatch();
+        font = new BitmapFont();
+        font.getData().setScale(0.52f);
+        layout = new GlyphLayout();
+        resetGraphicsState();
+        if (viewport != null) {
+            viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        }
+        if (camera != null) {
+            camera.position.set(TouchPongWorld.WIDTH / 2f, TouchPongWorld.HEIGHT / 2f, 0f);
+            camera.update();
+        }
+    }
+
+    private void resetGraphicsState() {
+        Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        Gdx.gl.glDisable(GL20.GL_DEPTH_TEST);
+        Gdx.gl.glDisable(GL20.GL_CULL_FACE);
+        Gdx.gl.glDisable(GL20.GL_STENCIL_TEST);
+        Gdx.gl.glColorMask(true, true, true, true);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
     }
 
     private void processAudioEvent() {

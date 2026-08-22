@@ -44,6 +44,30 @@ public class AndroidLauncher extends AndroidApplication {
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (game != null) {
+            game.onAndroidWindowFocusChanged(hasFocus);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (monetization != null) {
+            monetization.pause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (monetization != null) {
+            monetization.resume();
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         if (monetization != null) {
             monetization.destroy();

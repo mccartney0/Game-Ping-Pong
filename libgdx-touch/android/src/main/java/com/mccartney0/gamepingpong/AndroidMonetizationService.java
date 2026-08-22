@@ -135,6 +135,22 @@ public final class AndroidMonetizationService implements MonetizationService {
         });
     }
 
+    public void pause() {
+        activity.runOnUiThread(() -> {
+            if (banner != null) {
+                banner.pause();
+            }
+        });
+    }
+
+    public void resume() {
+        activity.runOnUiThread(() -> {
+            if (banner != null) {
+                banner.resume();
+            }
+        });
+    }
+
     public void destroy() {
         activity.runOnUiThread(() -> {
             if (banner != null) {
