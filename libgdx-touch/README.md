@@ -193,6 +193,18 @@ bash tools/build_neon_assets.sh
 ./gradlew :core:test :lwjgl3:compileJava --no-daemon
 ```
 
+## Áudio
+
+O pacote de áudio está documentado em [`AUDIO_ASSET_PIPELINE.md`](AUDIO_ASSET_PIPELINE.md). Ele inclui quatro trilhas OGG para menu, gameplay, Arena Mutante e campanha, além de 25 efeitos WAV para UI, colisões, placar, poderes, power-ups, bosses, transições e resultados. `AudioAssetCatalog` faz o carregamento multiplataforma e mantém o jogo jogável em modo silencioso quando os recursos de áudio não estão disponíveis.
+
+Para regenerar os efeitos determinísticos:
+
+```bash
+python3 tools/audio_asset_generator.py
+```
+
+O manifesto está em `../assets/audio/metadata/audio_catalog.json`, e o gerador está em `tools/audio_asset_generator.py`. O módulo Android empacota os arquivos pela pasta raiz `assets`; o jogo AWT original não participa desse pipeline.
+
 ## Efeitos visuais da bola
 
 `BallEffects` mantém pools fixos de pontos de trilha e partículas, evitando criar objetos durante cada frame. A trilha acompanha a posição e a velocidade da bola; partículas são emitidas em colisões com paredes e raquetes, ativações de habilidade e pontos. O renderer habilita alpha blending apenas durante a camada visual.

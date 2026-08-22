@@ -1,0 +1,46 @@
+{
+  "music": {
+    "menu": {"file": "audio/music/menu_neon_loop.ogg", "loop": true, "volume": 0.42},
+    "classic": {"file": "audio/music/gameplay_neon_loop.ogg", "loop": true, "volume": 0.34},
+    "survival": {"file": "audio/music/gameplay_neon_loop.ogg", "loop": true, "volume": 0.36},
+    "turbo": {"file": "audio/music/gameplay_neon_loop.ogg", "loop": true, "volume": 0.38},
+    "versus": {"file": "audio/music/gameplay_neon_loop.ogg", "loop": true, "volume": 0.36},
+    "mutant": {"file": "audio/music/mutant_arena_loop.ogg", "loop": true, "volume": 0.38},
+    "campaign": {"file": "audio/boss/campaign_boss_loop.ogg", "loop": true, "volume": 0.40}
+  },
+  "future_music_slots": {
+    "daily_challenge": "reserved for a short daily challenge loop",
+    "weekly_event": "reserved for a weekly event loop",
+    "boss_volt": "reserved for a boss-specific variation",
+    "boss_mirror": "reserved for a boss-specific variation",
+    "boss_twin": "reserved for a boss-specific variation",
+    "boss_gravity": "reserved for a boss-specific variation"
+  },
+  "sfx": {
+    "ui.tap": "audio/sfx/ui/ui_tap.wav",
+    "ui.confirm": "audio/sfx/ui/ui_confirm.wav",
+    "ui.back": "audio/sfx/ui/ui_back.wav",
+    "ui.pause": "audio/sfx/ui/ui_pause.wav",
+    "ui.error": "audio/sfx/ui/error.wav",
+    "transition.whoosh": "audio/sfx/transitions/transition_whoosh.wav",
+    "countdown.beep": "audio/sfx/ui/countdown_beep.wav",
+    "countdown.go": "audio/sfx/ui/countdown_go.wav",
+    "gameplay.paddle_hit": "audio/sfx/gameplay/paddle_hit.wav",
+    "gameplay.wall_bounce": "audio/sfx/gameplay/wall_bounce.wav",
+    "gameplay.score_point": "audio/sfx/gameplay/score_point.wav",
+    "results.match_win": "audio/sfx/results/match_win.wav",
+    "results.match_loss": "audio/sfx/results/match_loss.wav",
+    "powerup.spawn": "audio/sfx/powerups/powerup_spawn.wav",
+    "powerup.collect": "audio/sfx/powerups/powerup_collect.wav",
+    "powerup.energy": "audio/sfx/powerups/powerup_energy.wav",
+    "powerup.slow": "audio/sfx/powerups/powerup_slow.wav",
+    "powerup.split": "audio/sfx/powerups/powerup_split.wav",
+    "powerup.multi": "audio/sfx/powerups/powerup_multi.wav",
+    "ability.overdrive": "audio/sfx/abilities/ability_overdrive.wav",
+    "ability.shield": "audio/sfx/abilities/ability_shield.wav",
+    "ability.wide": "audio/sfx/abilities/ability_wide.wav",
+    "ability.denied": "audio/sfx/abilities/ability_denied.wav",
+    "boss.alert": "audio/sfx/boss/boss_alert.wav",
+    "boss.phase": "audio/sfx/boss/boss_phase.wav"
+  }
+}

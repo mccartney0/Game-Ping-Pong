@@ -1,0 +1,133 @@
+{
+  "sample_rate": 44100,
+  "channels": 1,
+  "format": "PCM_S16LE",
+  "looping": false,
+  "assets": {
+    "ui_tap": {
+      "file": "assets/audio/sfx/ui/ui_tap.wav",
+      "category": "ui",
+      "duration_seconds": 0.075
+    },
+    "ui_confirm": {
+      "file": "assets/audio/sfx/ui/ui_confirm.wav",
+      "category": "ui",
+      "duration_seconds": 0.238
+    },
+    "ui_back": {
+      "file": "assets/audio/sfx/ui/ui_back.wav",
+      "category": "ui",
+      "duration_seconds": 0.215
+    },
+    "ui_pause": {
+      "file": "assets/audio/sfx/ui/ui_pause.wav",
+      "category": "ui",
+      "duration_seconds": 0.295
+    },
+    "countdown_beep": {
+      "file": "assets/audio/sfx/ui/countdown_beep.wav",
+      "category": "ui",
+      "duration_seconds": 0.17
+    },
+    "countdown_go": {
+      "file": "assets/audio/sfx/ui/countdown_go.wav",
+      "category": "ui",
+      "duration_seconds": 0.375
+    },
+    "paddle_hit": {
+      "file": "assets/audio/sfx/gameplay/paddle_hit.wav",
+      "category": "gameplay",
+      "duration_seconds": 0.07
+    },
+    "wall_bounce": {
+      "file": "assets/audio/sfx/gameplay/wall_bounce.wav",
+      "category": "gameplay",
+      "duration_seconds": 0.06
+    },
+    "score_point": {
+      "file": "assets/audio/sfx/gameplay/score_point.wav",
+      "category": "gameplay",
+      "duration_seconds": 0.406
+    },
+    "match_win": {
+      "file": "assets/audio/sfx/results/match_win.wav",
+      "category": "results",
+      "duration_seconds": 0.9149
+    },
+    "match_loss": {
+      "file": "assets/audio/sfx/results/match_loss.wav",
+      "category": "results",
+      "duration_seconds": 0.72
+    },
+    "powerup_spawn": {
+      "file": "assets/audio/sfx/powerups/powerup_spawn.wav",
+      "category": "powerups",
+      "duration_seconds": 0.28
+    },
+    "powerup_collect": {
+      "file": "assets/audio/sfx/powerups/powerup_collect.wav",
+      "category": "powerups",
+      "duration_seconds": 0.345
+    },
+    "powerup_energy": {
+      "file": "assets/audio/sfx/powerups/powerup_energy.wav",
+      "category": "powerups",
+      "duration_seconds": 0.44
+    },
+    "powerup_slow": {
+      "file": "assets/audio/sfx/powerups/powerup_slow.wav",
+      "category": "powerups",
+      "duration_seconds": 0.28
+    },
+    "powerup_split": {
+      "file": "assets/audio/sfx/powerups/powerup_split.wav",
+      "category": "powerups",
+      "duration_seconds": 0.436
+    },
+    "powerup_multi": {
+      "file": "assets/audio/sfx/powerups/powerup_multi.wav",
+      "category": "powerups",
+      "duration_seconds": 0.505
+    },
+    "ability_overdrive": {
+      "file": "assets/audio/sfx/abilities/ability_overdrive.wav",
+      "category": "abilities",
+      "duration_seconds": 0.42
+    },
+    "ability_shield": {
+      "file": "assets/audio/sfx/abilities/ability_shield.wav",
+      "category": "abilities",
+      "duration_seconds": 0.42
+    },
+    "ability_wide": {
+      "file": "assets/audio/sfx/abilities/ability_wide.wav",
+      "category": "abilities",
+      "duration_seconds": 0.25
+    },
+    "ability_denied": {
+      "file": "assets/audio/sfx/abilities/ability_denied.wav",
+      "category": "abilities",
+      "duration_seconds": 0.25
+    },
+    "boss_alert": {
+      "file": "assets/audio/sfx/boss/boss_alert.wav",
+      "category": "boss",
+      "duration_seconds": 0.84
+    },
+    "boss_phase": {
+      "file": "assets/audio/sfx/boss/boss_phase.wav",
+      "category": "boss",
+      "duration_seconds": 0.32
+    },
+    "transition_whoosh": {
+      "file": "assets/audio/sfx/transitions/transition_whoosh.wav",
+      "category": "transitions",
+      "duration_seconds": 0.52
+    },
+    "error": {
+      "file": "assets/audio/sfx/ui/error.wav",
+      "category": "ui",
+      "duration_seconds": 0.24
+    }
+  }
+}
