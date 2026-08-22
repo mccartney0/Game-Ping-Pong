@@ -15,8 +15,8 @@ Este documento explica como criar um asset, seja com geração de imagem por IA,
 | Preview | `assets/generated/previews` | Inspeção visual rápida do pacote. |
 | Shader vertex | `assets/shaders/neon_glow_scanlines.vert` | Passa posição, cor e coordenadas de textura. |
 | Shader fragment | `assets/shaders/neon_glow_scanlines.frag` | Aplica glow, pulso e scanlines. |
-| Catálogo Java | `core/.../NeonAssetCatalog.java` | Carrega texturas por nome usando `AssetManager`. |
-| Integração | `core/.../PingPongTouchGame.java` | Configura o shader e renderiza o power-up texturizado. |
+| Catálogo Java | `core/.../NeonAssetCatalog.java` | Carrega regiões por nome usando `AssetManager` e `TextureAtlas`. |
+| Integração | `core/.../PingPongTouchGame.java` | Configura o shader em lote isolado e renderiza o power-up texturizado fora do Android. |
 
 O Android empacota a pasta raiz `assets` por meio de `android/build.gradle`. O desktop compartilha os mesmos recursos pelo source set do `core`. Nenhum arquivo do pacote depende de `android.*`.
 
@@ -119,7 +119,9 @@ Suponha que um novo `power_split.png` tenha sido criado por IA ou em um editor e
 6. Execute `validate` e abra `neon_preview.png` para verificar alpha, margem, contraste e silhueta.
 7. Compile o core e o desktop antes de publicar.
 
-A versão atual do jogo usa `NeonAssetCatalog` para carregar o PNG do power-up por nome. Se a textura não existir ou falhar, o mundo continua desenhando o power-up proceduralmente com `ShapeRenderer`, portanto a integração é segura durante a criação incremental.
+A versão atual do jogo usa `NeonAssetCatalog` para carregar a `TextureRegion` do power-up pelo nome do atlas. O renderer nunca desenha a página inteira do atlas: ele usa somente a região do ícone correspondente. Se o atlas ou a região não existirem, o mundo continua desenhando o power-up proceduralmente com `ShapeRenderer`.
+
+Como alguns dispositivos Android podem apresentar artefatos com shaders customizados ou caminhos de textura ainda não validados em todas as GPUs, `PingPongTouchGame` desabilita atlas e shader neon quando `Gdx.app.getType()` é Android. O APK mobile usa, por padrão, o render procedural estável; shader e atlas permanecem disponíveis para desktop e para uma futura ativação por modelo de GPU após validação. Essa decisão evita que um efeito visual experimental comprometa a jogabilidade.
 
 ## Uso do shader GLSL
 
@@ -137,7 +139,7 @@ Os uniforms usados são:
 | `u_scanlineStrength` | Intensidade das linhas | `0` baixa, `0.35` média, `0.65` alta. |
 | `u_tint` | Cor adicional do glow | Ciano padrão `(0.25, 0.85, 1.0, 1.0)`. |
 
-O shader é compilado no `create()`. Em caso de erro de leitura ou compilação, o jogo registra o problema e usa o shader padrão do `SpriteBatch`. O `ShapeRenderer` do mundo continua sendo a camada de gameplay e fallback.
+O shader é compilado no `create()` apenas quando a plataforma não é Android. Em caso de erro de leitura ou compilação, o jogo registra o problema e usa o shader padrão do `SpriteBatch`. O `ShapeRenderer` do mundo continua sendo a camada de gameplay e fallback. O lote de HUD/menu não usa o shader neon; somente o lote separado do ícone de power-up pode usá-lo.
 
 ## Build local e Android
 

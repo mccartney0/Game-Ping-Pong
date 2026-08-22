@@ -1,5 +1,6 @@
 package com.mccartney0.gamepingpong;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -7,7 +8,7 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -65,6 +66,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private String matchWinAchievementId;
     private BallEffectsQuality effectsQuality = BallEffectsQuality.MEDIUM;
     private float visualTime;
+    private boolean neonRenderingEnabled;
 
     private enum BallEffectsQuality {
         LOW, MEDIUM, HIGH
@@ -79,9 +81,13 @@ public class PingPongTouchGame extends ApplicationAdapter {
         camera.update();
         renderer = new ShapeRenderer();
         batch = new SpriteBatch();
-        neonShader = loadNeonShader();
+        neonRenderingEnabled = Gdx.app == null
+                || Gdx.app.getType() != Application.ApplicationType.Android;
+        neonShader = neonRenderingEnabled ? loadNeonShader() : null;
         neonAssets = new NeonAssetCatalog();
-        neonAssets.load();
+        if (neonRenderingEnabled) {
+            neonAssets.load();
+        }
         font = new BitmapFont();
         font.getData().setScale(0.52f);
         layout = new GlyphLayout();
@@ -128,10 +134,8 @@ public class PingPongTouchGame extends ApplicationAdapter {
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
         batch.setProjectionMatrix(camera.combined);
-        batch.setShader(neonShader);
-        batch.begin();
-        configureNeonShader();
         renderPowerUpTexture();
+        batch.begin();
         renderHud();
         if (overlayVisible) {
             if (transition.isActive()) {
@@ -141,7 +145,6 @@ public class PingPongTouchGame extends ApplicationAdapter {
             }
         }
         batch.end();
-        batch.setShader(null);
     }
 
     @Override
@@ -291,19 +294,24 @@ public class PingPongTouchGame extends ApplicationAdapter {
     }
 
     private void renderPowerUpTexture() {
-        if (neonAssets == null || !neonAssets.isLoaded()) {
+        if (!neonRenderingEnabled || neonAssets == null || !neonAssets.isLoaded()) {
             return;
         }
         PowerUp powerUp = world.getActivePowerUp();
         if (powerUp == null || !powerUp.isActive()) {
             return;
         }
-        Texture texture = neonAssets.getPowerUpTexture(powerUp.getType());
-        if (texture == null) {
+        TextureRegion region = neonAssets.getPowerUpRegion(powerUp.getType());
+        if (region == null) {
             return;
         }
+        batch.setShader(neonShader);
+        batch.begin();
+        configureNeonShader();
         float size = 0.86f;
-        batch.draw(texture, powerUp.getX() - size / 2f, powerUp.getY() - size / 2f, size, size);
+        batch.draw(region, powerUp.getX() - size / 2f, powerUp.getY() - size / 2f, size, size);
+        batch.end();
+        batch.setShader(null);
     }
 
     private ShaderProgram loadNeonShader() {

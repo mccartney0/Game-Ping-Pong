@@ -1,7 +1,6 @@
 package com.mccartney0.gamepingpong;
 
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
@@ -41,29 +40,25 @@ public final class NeonAssetCatalog {
         return loaded;
     }
 
-    public Texture getAbilityTexture(AbilityType ability) {
-        return getTexture(regionFor("power_" + ability.name().toLowerCase()));
+    public TextureRegion getAbilityRegion(AbilityType ability) {
+        return regionFor("power_" + ability.name().toLowerCase());
     }
 
-    public Texture getPowerUpTexture(PowerUpType powerUp) {
-        return getTexture(regionFor("power_" + powerUp.name().toLowerCase()));
+    public TextureRegion getPowerUpRegion(PowerUpType powerUp) {
+        return regionFor("power_" + powerUp.name().toLowerCase());
     }
 
-    public Texture getMenuButtonTexture() {
-        return getTexture(regionFor("menu_button"));
+    public TextureRegion getMenuButtonRegion() {
+        return regionFor("menu_button");
     }
 
-    public Texture getArenaGridTexture() {
-        return getTexture(regionFor("arena_grid"));
+    public TextureRegion getArenaGridRegion() {
+        return regionFor("arena_grid");
     }
 
     public void dispose() {
         manager.dispose();
         loaded = false;
-    }
-
-    private Texture getTexture(TextureRegion region) {
-        return region == null ? null : region.getTexture();
     }
 
     private TextureRegion regionFor(String name) {

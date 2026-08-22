@@ -61,3 +61,7 @@ A primeira versão automatizada está disponível no repositório em `libgdx-tou
 Os shaders `assets/shaders/neon_glow_scanlines.vert` e `assets/shaders/neon_glow_scanlines.frag` fornecem glow, pulso e scanlines para o `SpriteBatch`. O shader é carregado de forma segura pelo `PingPongTouchGame`; se a leitura ou compilação falhar, o render padrão continua funcionando. `NeonAssetCatalog` carrega os assets do caminho lógico `generated/neon/1x/`, e o power-up ativo usa seu PNG neon quando disponível, preservando o círculo procedural em caso de ausência.
 
 O caminho Android está configurado em `android/build.gradle` para empacotar a pasta raiz `assets`; desktop e testes continuam compartilhando o mesmo conjunto de arquivos pelo source set do `core`. O fluxo detalhado de criação com IA ou editor externo, conversão para PNG RGBA, regeneração, validação, build local e publicação está em `NEON_ASSET_PIPELINE.md`.
+
+## Correção de compatibilidade Android
+
+Após validação em aparelho, o shader customizado e o atlas neon foram isolados do caminho Android por padrão. O `PingPongTouchGame` usa o render procedural do `ShapeRenderer` em Android, evitando artefatos de textura ou shader específicos de GPU; o shader é aplicado somente a um lote separado do power-up nas plataformas aprovadas. O atlas nunca é desenhado como uma textura inteira: a integração usa apenas `TextureRegion` nomeada.
