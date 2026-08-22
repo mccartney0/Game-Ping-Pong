@@ -20,6 +20,12 @@ subprojects {
         google()
         mavenCentral()
     }
+    configurations.configureEach {
+        resolutionStrategy.force(
+                'androidx.core:core:1.13.1',
+                'androidx.core:core-ktx:1.13.1',
+                'androidx.annotation:annotation:1.7.1')
+    }
 }
 
 configure(subprojects.findAll { it.name == 'core' }) {
