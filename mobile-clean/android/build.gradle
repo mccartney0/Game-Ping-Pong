@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace 'com.mccartney0.gamepingpong.clean'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId 'com.mccartney0.gamepingpong.clean'
