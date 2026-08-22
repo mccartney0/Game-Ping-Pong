@@ -29,6 +29,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private final TouchPongWorld world;
     private final GameServices gameServices;
     private final MonetizationService monetizationService;
+    private AudioAssetCatalog audio;
 
     public PingPongTouchGame() {
         this(new NoopGameServices(), new NoopMonetizationService());
@@ -67,6 +68,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private BallEffectsQuality effectsQuality = BallEffectsQuality.MEDIUM;
     private float visualTime;
     private boolean neonRenderingEnabled;
+    private String lastAudioEvent;
 
     private enum BallEffectsQuality {
         LOW, MEDIUM, HIGH
@@ -88,6 +90,9 @@ public class PingPongTouchGame extends ApplicationAdapter {
         if (neonRenderingEnabled) {
             neonAssets.load();
         }
+        audio = new AudioAssetCatalog();
+        audio.load();
+        audio.playMusic(AudioAssetCatalog.MusicTrack.MENU);
         font = new BitmapFont();
         font.getData().setScale(0.52f);
         layout = new GlyphLayout();
@@ -113,8 +118,11 @@ public class PingPongTouchGame extends ApplicationAdapter {
             world.update(delta);
             processAchievements();
             submitCurrentMatchScoreIfFinished();
+            processAudioEvent();
             if (world.isMatchOver() && menu.getPage() != MobileMenu.Page.RESULTS) {
                 menu.showResults();
+                audio.play(world.playerScore > world.enemyScore
+                        ? AudioAssetCatalog.Cue.MATCH_WIN : AudioAssetCatalog.Cue.MATCH_LOSS);
                 transition.begin(MobileTransition.Type.SHOW_RESULTS, 0.8f);
             }
         }
@@ -161,6 +169,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
     public void pause() {
         if (gameStarted && !world.isMatchOver()) {
             world.setPaused(true);
+            audio.play(AudioAssetCatalog.Cue.UI_PAUSE);
             menu.showPause();
         }
     }
@@ -188,6 +197,9 @@ public class PingPongTouchGame extends ApplicationAdapter {
         }
         if (neonShader != null) {
             neonShader.dispose();
+        }
+        if (audio != null) {
+            audio.dispose();
         }
     }
 
@@ -284,6 +296,17 @@ public class PingPongTouchGame extends ApplicationAdapter {
                 });
     }
 
+    private void processAudioEvent() {
+        if (audio == null) {
+            return;
+        }
+        String event = world.getLastEvent();
+        if (event != null && !event.equals(lastAudioEvent)) {
+            audio.playEvent(event);
+            lastAudioEvent = event;
+        }
+    }
+
     private void processAchievements() {
         if (world.playerScore > 0) {
             achievementProgress.onPlayerPoint(gameServices, firstPointAchievementId);
@@ -362,10 +385,14 @@ public class PingPongTouchGame extends ApplicationAdapter {
             return;
         }
         if (transition.getType() == MobileTransition.Type.START_MATCH) {
+            audio.play(AudioAssetCatalog.Cue.COUNTDOWN_GO);
             world.setPaused(false);
+        } else if (transition.getType() == MobileTransition.Type.SHOW_RESULTS) {
+            // O stinger de resultado foi disparado ao iniciar a transicao.
         } else if (transition.getType() == MobileTransition.Type.RETURN_TO_MENU) {
             gameStarted = false;
             world.setPaused(true);
+            audio.playMusic(AudioAssetCatalog.MusicTrack.MENU);
         }
     }
 
@@ -454,23 +481,30 @@ public class PingPongTouchGame extends ApplicationAdapter {
     private final class MenuListener implements MobileMenu.Listener {
         @Override
         public void onStartMode(MobileGameMode mode) {
+            audio.play(AudioAssetCatalog.Cue.UI_CONFIRM);
+            audio.play(AudioAssetCatalog.Cue.TRANSITION_WHOOSH);
             currentMode = mode;
             world.setMode(mode);
             gameStarted = true;
             world.setPaused(true);
             finalScoreSubmissionRequested = false;
             monetizationService.setBannerVisible(false);
+            audio.playMusic(audio.trackFor(mode));
+            audio.play(AudioAssetCatalog.Cue.COUNTDOWN_BEEP);
             transition.begin(MobileTransition.Type.START_MATCH, 1.6f);
         }
 
         @Override
         public void onResumeGame() {
+            audio.play(AudioAssetCatalog.Cue.UI_CONFIRM);
+            audio.playMusic(audio.trackFor(currentMode));
             gameStarted = true;
             world.setPaused(false);
         }
 
         @Override
         public void onOpenMainMenu() {
+            audio.play(AudioAssetCatalog.Cue.UI_BACK);
             world.resetMatch();
             world.setPaused(true);
             gameStarted = false;
@@ -480,26 +514,31 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
         @Override
         public void onOpenHelp() {
+            audio.play(AudioAssetCatalog.Cue.UI_TAP);
             // A página é controlada pelo MobileMenu.
         }
 
         @Override
         public void onOpenSettings() {
+            audio.play(AudioAssetCatalog.Cue.UI_TAP);
             // A página é controlada pelo MobileMenu.
         }
 
         @Override
         public void onShowLeaderboards() {
+            audio.play(AudioAssetCatalog.Cue.UI_TAP);
             gameServices.showAllLeaderboards();
         }
 
         @Override
         public void onShowAchievements() {
+            audio.play(AudioAssetCatalog.Cue.UI_TAP);
             gameServices.showAchievements();
         }
 
         @Override
         public void onShowRewarded() {
+            audio.play(AudioAssetCatalog.Cue.UI_CONFIRM);
             monetizationService.showRewarded("mobile-menu-energy", new RewardCallback() {
                 @Override
                 public void onRewardEarned(String placement, int amount) {
@@ -515,6 +554,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
 
         @Override
         public void onCycleEffectsQuality() {
+            audio.play(AudioAssetCatalog.Cue.UI_TAP);
             switch (effectsQuality) {
             case LOW:
                 effectsQuality = BallEffectsQuality.MEDIUM;
@@ -559,6 +599,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
             }
             if (screenX < 150 && screenY < 150) {
                 world.togglePause();
+                audio.play(AudioAssetCatalog.Cue.UI_PAUSE);
                 menu.showPause();
                 return true;
             }
@@ -573,6 +614,7 @@ public class PingPongTouchGame extends ApplicationAdapter {
             if (keycode == Input.Keys.BACK || keycode == Input.Keys.ESCAPE
                     || keycode == Input.Keys.P) {
                 world.togglePause();
+                audio.play(AudioAssetCatalog.Cue.UI_PAUSE);
                 menu.showPause();
                 return true;
             }
